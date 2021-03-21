@@ -36,17 +36,17 @@ func main() {
 
 	fmt.Println(banner)
 	fmt.Printf("Hello %s! Welcome in `rash` language!\n", u.Username)
-	fmt.Printf("Feel free to type any code here!\n")
+	fmt.Printf("Let's start fun!\n")
 
 	if err = repl.Start(os.Stdin, os.Stdout); err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println("Good bye!")
+	fmt.Println("Good bye!... rash will miss you")
 }
 
 func extensionsRegistry() (*extensions.Registry, error) {
 	r := extensions.New()
-	if err := r.Add("extensions/plugins/plugins.so", "SysPlugin"); err != nil {
+	if err := r.Add("bin/sys.so", "SysPlugin"); err != nil {
 		return nil, err
 	}
 	return r, nil
