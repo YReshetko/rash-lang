@@ -10,6 +10,19 @@ import (
 	"os/user"
 )
 
+const banner = `
+@@@@@@@    @@@@@@    @@@@@@   @@@  @@@                   @@@        @@@@@@   @@@  @@@   @@@@@@@@  
+@@@@@@@@  @@@@@@@@  @@@@@@@   @@@  @@@                   @@@       @@@@@@@@  @@@@ @@@  @@@@@@@@@  
+@@!  @@@  @@!  @@@  !@@       @@!  @@@                   @@!       @@!  @@@  @@!@!@@@  !@@        
+!@!  @!@  !@!  @!@  !@!       !@!  @!@                   !@!       !@!  @!@  !@!!@!@!  !@!        
+@!@!!@!   @!@!@!@!  !!@@!!    @!@!@!@!     @!@!@!@!@     @!!       @!@!@!@!  @!@ !!@!  !@! @!@!@  
+!!@!@!    !!!@!!!!   !!@!!!   !!!@!!!!     !!!@!@!!!     !!!       !!!@!!!!  !@!  !!!  !!! !!@!!  
+!!: :!!   !!:  !!!       !:!  !!:  !!!                   !!:       !!:  !!!  !!:  !!!  :!!   !!:  
+:!:  !:!  :!:  !:!      !:!   :!:  !:!                    :!:      :!:  !:!  :!:  !:!  :!:   !::  
+::   :::  ::   :::  :::: ::   ::   :::                    :: ::::  ::   :::   ::   ::   ::: ::::  
+ :   : :   :   : :  :: : :     :   : :                   : :: : :   :   : :  ::    :    :: :: :
+`
+
 func main() {
 	u, err := user.Current()
 	if err != nil {
@@ -21,7 +34,8 @@ func main() {
 	}
 	evaluator.InitRegistry(reg)
 
-	fmt.Printf("Hello %s! Welcome in monkey language!\n", u.Username)
+	fmt.Println(banner)
+	fmt.Printf("Hello %s! Welcome in `rash` language!\n", u.Username)
 	fmt.Printf("Feel free to type any code here!\n")
 
 	if err = repl.Start(os.Stdin, os.Stdout); err != nil {
