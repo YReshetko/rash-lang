@@ -509,3 +509,109 @@ func TestDeclarationStatement(t *testing.T) {
 	assert.Equal(t, "time", include.Alias.Value)
 	assert.Equal(t, "path/to/script/time.rs", include.Include.Value)
 }
+
+func TestSimpleReferencedExpression(t *testing.T) {
+	input := `sys.time();`
+
+	l := lexer.New(input, "non-file")
+	p := parser.New(l)
+
+	program := p.ParseProgram()
+	require.Len(t, p.Errors(), 0)
+	require.NotNil(t, program)
+	require.Len(t, program.Statements, 1)
+
+	statement, ok := program.Statements[0].(*ast.ExpressionStatement)
+	require.True(t, ok)
+
+	exp, ok := statement.Expression.(*ast.ReferencedExpression)
+	require.True(t, ok)
+
+	assert.Equal(t, "sys", exp.Reference.Value)
+
+	call, ok := exp.Expression.(*ast.CallExpression)
+	require.True(t, ok)
+
+	callIdent, ok := call.Function.(*ast.Identifier)
+	require.True(t, ok)
+	assert.Equal(t, "time", callIdent.Value)
+}
+
+
+func TestOperationOnReferencedExpression(t *testing.T) {
+	input := `let a = sys.value - 10;`
+
+	l := lexer.New(input, "non-file")
+	p := parser.New(l)
+
+	program := p.ParseProgram()
+	require.Len(t, p.Errors(), 0)
+	require.NotNil(t, program)
+	require.Len(t, program.Statements, 1)
+
+	statement, ok := program.Statements[0].(*ast.LetStatement)
+	require.True(t, ok)
+	assert.Equal(t, "a", statement.Name.Value)
+
+	infix, ok := statement.Value.(*ast.InfixExpression)
+	require.True(t, ok)
+
+
+	exp, ok := infix.Left.(*ast.ReferencedExpression)
+	require.True(t, ok)
+
+	assert.Equal(t, "sys", exp.Reference.Value)
+
+	ident, ok := exp.Expression.(*ast.Identifier)
+	require.True(t, ok)
+	assert.Equal(t, "value", ident.Value)
+
+	callIdent, ok := infix.Right.(*ast.IntegerLiteral)
+	require.True(t, ok)
+	assert.Equal(t, int64(10), callIdent.Value)
+
+	assert.Equal(t, "-", infix.Operator)
+}
+
+
+func TestReferencedExpression(t *testing.T) {
+	input := `let s = sys.call(a, 100, fn(x, y) {return x + y;});`
+
+	l := lexer.New(input, "non-file")
+	p := parser.New(l)
+
+	program := p.ParseProgram()
+	require.Len(t, p.Errors(), 0)
+	require.NotNil(t, program)
+	require.Len(t, program.Statements, 1)
+
+	statement, ok := program.Statements[0].(*ast.LetStatement)
+	require.True(t, ok)
+
+	exp, ok := statement.Value.(*ast.ReferencedExpression)
+	require.True(t, ok)
+
+	assert.Equal(t, "sys", exp.Reference.Value)
+
+	call, ok := exp.Expression.(*ast.CallExpression)
+	require.True(t, ok)
+
+	callIdent, ok := call.Function.(*ast.Identifier)
+	require.True(t, ok)
+	assert.Equal(t, "call", callIdent.Value)
+
+	require.Len(t, call.Arguments, 3)
+
+	arg1, ok := call.Arguments[0].(*ast.Identifier)
+	require.True(t, ok)
+	assert.Equal(t, "a", arg1.Value)
+
+	arg2, ok := call.Arguments[1].(*ast.IntegerLiteral)
+	require.True(t, ok)
+	assert.Equal(t, int64(100), arg2.Value)
+
+	arg3, ok := call.Arguments[2].(*ast.FunctionLiteral)
+	require.True(t, ok)
+	assert.Len(t, arg3.Parameters, 2)
+}
+

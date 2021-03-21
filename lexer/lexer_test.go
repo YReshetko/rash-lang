@@ -11,7 +11,7 @@ import (
 )
 
 func TestNextToken_Simple(t *testing.T) {
-	input := "+=;)(}{,"
+	input := "+=;)(}{,."
 	tests := []struct {
 		expectedType    tokens.TokenType
 		expectedLiteral string
@@ -24,6 +24,7 @@ func TestNextToken_Simple(t *testing.T) {
 		{tokens.RBRACE, "}"},
 		{tokens.LBRACE, "{"},
 		{tokens.COMMA, ","},
+		{tokens.DOT, "."},
 		{tokens.EOF, ""},
 	}
 
@@ -217,4 +218,39 @@ func TestNextToken_Equal_NotEqual(t *testing.T) {
 		assert.Equal(t, v.expectedLiteral, next.Literal)
 		assert.Equal(t, v.expectedType, next.Type)
 	}
+}
+
+func TestDottedIdentifiers(t *testing.T) {
+	input := `
+			let a = sys.PI;
+			sys.time();
+`
+	tests := []struct {
+		expectedType    tokens.TokenType
+		expectedLiteral string
+	}{
+		{tokens.LET, "let"},
+		{tokens.IDENT, "a"},
+		{tokens.ASSIGN, "="},
+		{tokens.IDENT, "sys"},
+		{tokens.DOT, "."},
+		{tokens.IDENT, "PI"},
+		{tokens.SEMICOLON, ";"},
+		{tokens.IDENT, "sys"},
+		{tokens.DOT, "."},
+		{tokens.IDENT, "time"},
+		{tokens.LPAREN, "("},
+		{tokens.RPAREN, ")"},
+		{tokens.SEMICOLON, ";"},
+		{tokens.EOF, ""},
+	}
+
+	l := lexer.New(input, "non-file")
+
+	for _, v := range tests {
+		next := l.NextToken()
+		assert.Equal(t, v.expectedLiteral, next.Literal)
+		assert.Equal(t, v.expectedType, next.Type)
+	}
+
 }
