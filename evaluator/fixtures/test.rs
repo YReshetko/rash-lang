@@ -1,0 +1,1 @@
+let testFn = fn(){return 100;};
