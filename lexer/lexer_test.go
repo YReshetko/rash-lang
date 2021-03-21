@@ -6,8 +6,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/YReshetko/monkey-language/lexer"
-	"github.com/YReshetko/monkey-language/tokens"
+	"github.com/YReshetko/rash-lang/lexer"
+	"github.com/YReshetko/rash-lang/tokens"
 )
 
 func TestNextToken_Simple(t *testing.T) {

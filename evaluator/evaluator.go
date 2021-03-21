@@ -2,10 +2,10 @@ package evaluator
 
 import (
 	"fmt"
-	"github.com/YReshetko/monkey-language/ast"
-	"github.com/YReshetko/monkey-language/lexer"
-	"github.com/YReshetko/monkey-language/objects"
-	"github.com/YReshetko/monkey-language/parser"
+	"github.com/YReshetko/rash-lang/ast"
+	"github.com/YReshetko/rash-lang/lexer"
+	"github.com/YReshetko/rash-lang/objects"
+	"github.com/YReshetko/rash-lang/parser"
 	"io/ioutil"
 	"strings"
 )

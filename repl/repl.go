@@ -3,10 +3,10 @@ package repl
 import (
 	"bufio"
 	"fmt"
-	"github.com/YReshetko/monkey-language/evaluator"
-	"github.com/YReshetko/monkey-language/lexer"
-	"github.com/YReshetko/monkey-language/objects"
-	"github.com/YReshetko/monkey-language/parser"
+	"github.com/YReshetko/rash-lang/evaluator"
+	"github.com/YReshetko/rash-lang/lexer"
+	"github.com/YReshetko/rash-lang/objects"
+	"github.com/YReshetko/rash-lang/parser"
 	"io"
 )
 

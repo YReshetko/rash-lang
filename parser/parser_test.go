@@ -1,10 +1,10 @@
 package parser_test
 
 import (
-	"github.com/YReshetko/monkey-language/ast"
-	"github.com/YReshetko/monkey-language/lexer"
-	"github.com/YReshetko/monkey-language/parser"
-	"github.com/YReshetko/monkey-language/tokens"
+	"github.com/YReshetko/rash-lang/ast"
+	"github.com/YReshetko/rash-lang/lexer"
+	"github.com/YReshetko/rash-lang/parser"
+	"github.com/YReshetko/rash-lang/tokens"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"strconv"

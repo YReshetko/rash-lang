@@ -3,7 +3,7 @@ package objects
 import (
 	"bytes"
 	"fmt"
-	"github.com/YReshetko/monkey-language/ast"
+	"github.com/YReshetko/rash-lang/ast"
 	"strings"
 )
 

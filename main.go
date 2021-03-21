@@ -2,9 +2,9 @@ package main
 
 import (
 	"fmt"
-	"github.com/YReshetko/monkey-language/evaluator"
-	"github.com/YReshetko/monkey-language/extensions"
-	"github.com/YReshetko/monkey-language/repl"
+	"github.com/YReshetko/rash-lang/evaluator"
+	"github.com/YReshetko/rash-lang/extensions"
+	"github.com/YReshetko/rash-lang/repl"
 	"log"
 	"os"
 	"os/user"

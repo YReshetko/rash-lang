@@ -1,8 +1,8 @@
 package ast_test
 
 import (
-	"github.com/YReshetko/monkey-language/ast"
-	"github.com/YReshetko/monkey-language/tokens"
+	"github.com/YReshetko/rash-lang/ast"
+	"github.com/YReshetko/rash-lang/tokens"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )

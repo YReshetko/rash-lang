@@ -1,6 +1,6 @@
 package lexer
 
-import "github.com/YReshetko/monkey-language/tokens"
+import "github.com/YReshetko/rash-lang/tokens"
 
 type Lexer struct {
 	input        string

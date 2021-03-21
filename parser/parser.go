@@ -2,9 +2,9 @@ package parser
 
 import (
 	"fmt"
-	"github.com/YReshetko/monkey-language/ast"
-	"github.com/YReshetko/monkey-language/lexer"
-	"github.com/YReshetko/monkey-language/tokens"
+	"github.com/YReshetko/rash-lang/ast"
+	"github.com/YReshetko/rash-lang/lexer"
+	"github.com/YReshetko/rash-lang/tokens"
 	"strconv"
 )
 

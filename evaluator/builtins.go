@@ -1,8 +1,8 @@
 package evaluator
 
 import (
-	"github.com/YReshetko/monkey-language/extensions"
-	"github.com/YReshetko/monkey-language/objects"
+	"github.com/YReshetko/rash-lang/extensions"
+	"github.com/YReshetko/rash-lang/objects"
 )
 
 var registry *extensions.Registry

@@ -1,4 +1,4 @@
-module github.com/YReshetko/monkey-language
+module github.com/YReshetko/rash-lang
 
 go 1.15
 

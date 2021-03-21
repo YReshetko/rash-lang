@@ -3,7 +3,7 @@ package ast
 import (
 	"bytes"
 	"fmt"
-	"github.com/YReshetko/monkey-language/tokens"
+	"github.com/YReshetko/rash-lang/tokens"
 	"strings"
 )
 
