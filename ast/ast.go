@@ -127,9 +127,8 @@ func (e *ExpressionStatement) StackLine() string {
 	return fmt.Sprintf("file: %s; line: %d", e.Token.FileName, e.Token.LineNumber)
 }
 
-
 type DeclarationStatement struct {
-	Token      tokens.Token // The first token in the expression
+	Token       tokens.Token // The first token in the expression
 	Declaration Declaration
 }
 
@@ -144,7 +143,6 @@ func (d *DeclarationStatement) String() string {
 func (d *DeclarationStatement) StackLine() string {
 	return fmt.Sprintf("file: %s; line: %d", d.Token.FileName, d.Token.LineNumber)
 }
-
 
 type IntegerLiteral struct {
 	Token tokens.Token
@@ -335,12 +333,12 @@ func (c *CallExpression) StackLine() string {
 }
 
 type IncludeDeclaration struct {
-	tokens.Token
+	Token   tokens.Token
 	Alias   *Identifier
 	Include *StringLiteral
 }
 
-func (c *IncludeDeclaration) declarationNode()      {}
+func (c *IncludeDeclaration) declarationNode()     {}
 func (c *IncludeDeclaration) TokenLiteral() string { return c.Token.Literal }
 func (c *IncludeDeclaration) String() string {
 	out := bytes.Buffer{}
@@ -359,3 +357,24 @@ func (c *IncludeDeclaration) StackLine() string {
 	return fmt.Sprintf("file: %s; line: %d", c.Token.FileName, c.Token.LineNumber)
 }
 
+type ReferencedExpression struct {
+	Token      tokens.Token
+	Reference  *Identifier
+	Expression Expression
+}
+
+func (r *ReferencedExpression) expressionNode()      {}
+func (r *ReferencedExpression) TokenLiteral() string { return r.Token.Literal }
+func (r *ReferencedExpression) String() string {
+	out := bytes.Buffer{}
+
+	out.WriteString(r.Reference.String())
+	out.WriteString(".")
+	out.WriteString(r.Expression.String())
+	out.WriteString(";")
+
+	return out.String()
+}
+func (r *ReferencedExpression) StackLine() string {
+	return fmt.Sprintf("file: %s; line: %d", r.Token.FileName, r.Token.LineNumber)
+}

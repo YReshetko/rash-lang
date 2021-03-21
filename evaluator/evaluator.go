@@ -74,9 +74,42 @@ func Eval(node ast.Node, environment *objects.Environment) objects.Object {
 			return args[0]
 		}
 		return applyFunction(function, args)
+	case *ast.ReferencedExpression:
+		return evalReferencedExpression(node, environment)
 	}
 
 	return objects.NULL
+}
+
+func evalReferencedExpression(node *ast.ReferencedExpression, environment *objects.Environment) objects.Object {
+	_, ok := environment.Get(node.Reference.Value)
+	if ok {
+		// TODO Can be implemented if we have objects or builtin types functions
+		return newError("unsupported call on %s", node.Reference.Token.Literal)
+	}
+
+	extEnv, ok := environment.GetExternalEnvironment(node.Reference.Value)
+	if !ok {
+		return newError("alias %s not found, check includes section", node.Reference.Value)
+	}
+
+	switch n := node.Expression.(type) {
+	case *ast.Identifier:
+		return evalIdentifier(n, extEnv)
+	case *ast.CallExpression:
+		function := Eval(n.Function, extEnv)
+		if isError(function) {
+			return function
+		}
+		args := evalExpressions(n.Arguments, environment)
+		if len(args) == 1 && isError(args[0]) {
+			return args[0]
+		}
+		return applyFunction(function, args)
+	default:
+		return newError("unsupported reference call %s", node.Expression.TokenLiteral())
+	}
+
 }
 
 func evalDeclarationStatement(node *ast.DeclarationStatement, environment *objects.Environment) objects.Object {
@@ -100,11 +133,14 @@ func evalDeclarationStatement(node *ast.DeclarationStatement, environment *objec
 		return newError("unable to evaluate included script %s due to:\n %s", include.Include.Value, strings.Join(p.Errors(), ";\n"))
 	}
 
-	// TODO instead of filling this environment create a new one and pass it to existing for accessing it by alias
-	obj := Eval(program, environment)
+	externalEnv := objects.NewEnvironment()
+
+	obj := Eval(program, externalEnv)
 	if obj.Type() == objects.ERROR_OBJ {
 		return obj
 	}
+
+	environment.AddExternalEnvironment(include.Alias.Value, externalEnv)
 
 	return objects.NULL
 }

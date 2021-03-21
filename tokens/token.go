@@ -22,6 +22,8 @@ const (
 	EQ     = "=="
 	NOT_EQ = "!="
 
+	DOT = "."
+
 	// Delimeters
 	COMMA     = ","
 	SEMICOLON = ";"

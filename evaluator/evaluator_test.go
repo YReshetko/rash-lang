@@ -260,7 +260,69 @@ func TestIncludeDeclarations(t *testing.T) {
 		input    string
 		expected int64
 	}{
-		{`# test "fixtures/test.rs"; testFn();`, 100},
+		{`
+			# test "fixtures/test.rs"; 
+			test.testFn();
+		`, 100},
+		{`
+			# test "fixtures/test.rs"; 
+			let sub = fn(x, y){
+				return x - y;
+			};
+			test.anotherFn(10, 15, sub);
+		`, 0},
+		{`
+			# test "fixtures/test.rs"; 
+			let sub = fn(x, y){
+				return x + y;
+			};
+			test.anotherFn(2, 3, sub);
+		`, 10},
+		{`
+			# test "fixtures/test.rs"; 
+			test.anotherFn(2, 3, fn(x, y){
+				return x * y;
+			});
+		`, 12},
+		{`
+			# test "fixtures/test.rs"; 
+			let a = test.const - 9;
+			a;
+		`, 120},
+		{`
+			# test "fixtures/test.rs";
+			let valOne = test.const - 120;
+			let valTwo = test.const;
+			let add = fn(x, y){
+				return x + y;
+			};
+			test.anotherFn(valOne, valTwo, add);
+		`, 276},
+		{`
+			# test "fixtures/test.rs";
+			let valOne = test.const - test.const * 2;
+			let valTwo = fn(v){return v - 120}(test.const);
+			let add = fn(x, y){
+				return x + y;
+			};
+			test.anotherFn(valOne, valTwo, add);
+		`, -240},
+		{`
+			# deep "fixtures/deep.rs";
+			let add = fn(x, y){
+				return x + y;
+			};
+			let b = deep.func(12, add);
+			b;
+		`, 54},
+		{`
+			# deep "fixtures/deepdeep.rs";
+			let add = fn(x, y){
+				return x + y;
+			};
+			let b = deep.func(add);
+			b;
+		`, 58},
 	}
 	for _, test := range tests {
 		obj := testEval(t, test.input)

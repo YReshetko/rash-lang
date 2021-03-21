@@ -53,6 +53,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerInfix(tokens.SLASH, p.parseInfixExpression)
 	p.registerInfix(tokens.ASTERISK, p.parseInfixExpression)
 	p.registerInfix(tokens.LPAREN, p.parseCallExpression)
+	p.registerInfix(tokens.DOT, p.parseInfixReferencedExpression)
 
 	// Call twice to set current and peek tokens
 	p.nextToken()
@@ -173,7 +174,9 @@ const (
 	SUM         // +
 	PRODUCT     // *
 	PREFIX      // -x or !x
+	DOT			// .
 	CALL        // myFunc(x)
+
 )
 
 var precedences = map[tokens.TokenType]int{
@@ -186,6 +189,7 @@ var precedences = map[tokens.TokenType]int{
 	tokens.SLASH:    PRODUCT,
 	tokens.ASTERISK: PRODUCT,
 	tokens.LPAREN:   CALL,
+	tokens.DOT:      DOT,
 }
 
 func (p *Parser) parseExpressionStatement() ast.Statement {
@@ -439,6 +443,27 @@ func (p *Parser) parseCallArguments() []ast.Expression {
 	}
 	return expressions
 
+}
+
+func (p *Parser) parseInfixReferencedExpression(left ast.Expression) ast.Expression {
+	defer untrace(trace("parseInfixReferencedExpression"))
+
+	ref, ok := left.(*ast.Identifier)
+	if !ok {
+		message := fmt.Sprintf("expected identifier on left side, but got %s", left.TokenLiteral())
+		p.errors = append(p.errors, message)
+		return nil
+	}
+
+	if !p.expectPeekToken(tokens.IDENT) {
+		p.peekError(tokens.IDENT)
+		return nil
+	}
+	return &ast.ReferencedExpression{
+		Token:      p.currToken,
+		Reference:  ref,
+		Expression: p.parseExpression(DOT),
+	}
 }
 
 func (p *Parser) currTokenIs(t tokens.TokenType) bool {
