@@ -53,6 +53,7 @@ func TestNextToken_Program(t *testing.T) {
 	"foo bar";
 	"hello \"world\"";
 	"hello \n\t \"world\"";
+	[1, 2];
 `
 	tests := []struct {
 		expectedType    tokens.TokenType
@@ -106,6 +107,12 @@ func TestNextToken_Program(t *testing.T) {
 		{tokens.SEMICOLON, ";"},
 		{tokens.STRING, `hello 
 	 "world"`},
+		{tokens.SEMICOLON, ";"},
+		{tokens.LBRACKET, "["},
+		{tokens.INT, "1"},
+		{tokens.COMMA, ","},
+		{tokens.INT, "2"},
+		{tokens.RBRACKET, "]"},
 		{tokens.SEMICOLON, ";"},
 		{tokens.EOF, ""},
 	}

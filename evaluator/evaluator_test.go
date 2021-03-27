@@ -330,6 +330,68 @@ func TestIncludeDeclarations(t *testing.T) {
 	}
 }
 
+func TestArrayDefinition(t *testing.T) {
+	tests := []struct {
+		input string
+		value []interface{}
+	}{
+		{"[1, 2 * 2, 3 == 3];", []interface{}{1, 4, true}},
+		{`let func = fn(a, b) {a + b}; [1, func("hello ", "world"), 3 == 3];`, []interface{}{1, "hello world", true}},
+		{`# test "fixtures/test.rs"; [1, "hello " + "world", test.const];`, []interface{}{1, "hello world", 129}},
+	}
+	for _, test := range tests {
+		obj := testEval(t, test.input)
+		assertArrayObject(t, obj, test.value)
+	}
+}
+
+func TestArrayIndexExpression(t *testing.T) {
+	tests := []struct {
+		input string
+		value interface{}
+	}{
+		{"[1, 2, 3][0];", 1},
+		{"[1, 2, 3][1];", 2},
+		{"[1, 2, 3][2];", 3},
+		{"let i = 0; [1][i];", 1},
+		{"[1, 2, 3][1 + 1];", 3},
+		{"let arr = [1, 2, 3]; arr[2];", 3},
+		{"let arr = [1, 2, 3]; let i = arr[1]; arr[i];", 3},
+		{"[1, 2, 3][3]", nil},
+		{"[1, 2, 3][-1]", nil},
+		{"let a = [1, 2, 3]; [a[2], a[1], a[0]]", []interface{}{3, 2, 1}},
+	}
+	for _, test := range tests {
+		obj := testEval(t, test.input)
+		switch exp := test.value.(type) {
+		case int:
+			assertIntegerObject(t, obj, int64(exp))
+		case nil:
+			assertNullObject(t, obj)
+		case []interface{}:
+			assertArrayObject(t, obj, exp)
+		}
+	}
+}
+
+func assertArrayObject(t *testing.T, obj objects.Object, value []interface{}) {
+	arr, ok := obj.(*objects.Array)
+	require.True(t, ok)
+	require.Equal(t, len(value), len(arr.Elements))
+	for i, v := range value {
+		switch exp := v.(type) {
+		case int:
+			assertIntegerObject(t, arr.Elements[i], int64(exp))
+		case string:
+			assertStringObject(t, arr.Elements[i], exp)
+		case bool:
+			assertBooleanObject(t, arr.Elements[i], exp)
+		default:
+			assert.Fail(t, "unsupported type %T", v)
+		}
+	}
+}
+
 func assertError(t *testing.T, obj objects.Object, e string) {
 	require.NotNil(t, obj)
 	assert.Equal(t, objects.ERROR_OBJ, obj.Type())

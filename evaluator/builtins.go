@@ -104,6 +104,12 @@ func getValue(object objects.Object) interface{} {
 		return obj.Value
 	case *objects.Boolean:
 		return obj.Value
+	case *objects.Array:
+		arr := make([]interface{}, len(obj.Elements))
+		for i, element := range obj.Elements {
+			arr[i] = getValue(element)
+		}
+		return arr
 	default:
 		return nil
 	}

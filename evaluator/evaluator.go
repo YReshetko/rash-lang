@@ -74,11 +74,47 @@ func Eval(node ast.Node, environment *objects.Environment) objects.Object {
 			return args[0]
 		}
 		return applyFunction(function, args)
+	case *ast.ArrayLiteral:
+		elements := evalExpressions(node.Elements, environment)
+		if len(elements) == 1 && isError(elements[0]) {
+			return elements[0]
+		}
+		return &objects.Array{Elements: elements}
+	case *ast.IndexExpression:
+		left := Eval(node.Left, environment)
+		if isError(left) {
+			return left
+		}
+		index := Eval(node.Index, environment)
+		if isError(index) {
+			return index
+		}
+		return evalIndexExpression(left, index)
 	case *ast.ReferencedExpression:
 		return evalReferencedExpression(node, environment)
 	}
 
 	return objects.NULL
+}
+
+func evalIndexExpression(left objects.Object, index objects.Object) objects.Object {
+	switch {
+	case left.Type() == objects.ARRAY_OBJ && index.Type() == objects.INTEGER_OBJ:
+		return evalArrayIndexExpression(left, index)
+	default:
+		return newError("index operator not supported for: %s", left.Type())
+	}
+}
+
+func evalArrayIndexExpression(left objects.Object, index objects.Object) objects.Object {
+	arr := left.(*objects.Array)
+	ind := index.(*objects.Integer).Value
+	max := int64(len(arr.Elements) - 1)
+	if 0 > ind || ind > max {
+		return objects.NULL
+	}
+	return arr.Elements[ind]
+
 }
 
 func evalReferencedExpression(node *ast.ReferencedExpression, environment *objects.Environment) objects.Object {
@@ -119,10 +155,9 @@ func evalDeclarationStatement(node *ast.DeclarationStatement, environment *objec
 	}
 
 	src, err := ioutil.ReadFile(include.Include.Value)
-	if err != nil{
+	if err != nil {
 		return newError("unable to load included script %s due to %v", include.Include.Value, err)
 	}
-
 
 	l := lexer.New(string(src), include.Include.Value)
 	p := parser.New(l)

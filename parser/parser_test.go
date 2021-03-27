@@ -115,7 +115,6 @@ func TestInteger(t *testing.T) {
 	assert.Equal(t, int64(5), identifier.Value)
 }
 
-
 func TestStringLiteral(t *testing.T) {
 	input := `"hello \"world\"";`
 	l := lexer.New(input, "non-file")
@@ -135,7 +134,6 @@ func TestStringLiteral(t *testing.T) {
 	assert.Equal(t, tokens.TokenType(tokens.STRING), strLit.Token.Type)
 	assert.Equal(t, `hello "world"`, strLit.Value)
 }
-
 
 func TestPrefixExpressionsInteger(t *testing.T) {
 	tests := []struct {
@@ -268,6 +266,9 @@ func TestComplexExpressions(t *testing.T) {
 		{"a + -5 * -3", "(a + ((-5) * (-3)))"},
 		{"a * 2 / (3 + -2) * 5", "(((a * 2) / (3 + (-2))) * 5)"},
 		{"a * 2 / (3 + add(2 - b, sub(3), b + sq(14 - 3)) - -2) * 5", "(((a * 2) / ((3 + add((2 - b), sub(3), (b + sq((14 - 3))))) - (-2))) * 5)"},
+		{"a * [1, 2, 3, 4][b * c] * d","((a * ([1, 2, 3, 4][(b * c)])) * d)"},
+		{"add(a * b[2], b[1], 2 * [1, 2][1])","add((a * (b[2])), (b[1]), (2 * ([1, 2][1])))"},
+		{"add(a * b[2], import.arr[1 + func(a)], 2 * [1, 2][1])","add((a * (b[2])), import.(arr[(1 + func(a))]), (2 * ([1, 2][1])))"},
 	}
 
 	for _, test := range tests {
@@ -498,7 +499,6 @@ func TestDeclarationStatement(t *testing.T) {
 	assert.Equal(t, "sys", include.Alias.Value)
 	assert.Equal(t, "sys.rs", include.Include.Value)
 
-
 	statement, ok = program.Statements[1].(*ast.DeclarationStatement)
 	require.True(t, ok)
 
@@ -537,7 +537,6 @@ func TestSimpleReferencedExpression(t *testing.T) {
 	assert.Equal(t, "time", callIdent.Value)
 }
 
-
 func TestOperationOnReferencedExpression(t *testing.T) {
 	input := `let a = sys.value - 10;`
 
@@ -556,7 +555,6 @@ func TestOperationOnReferencedExpression(t *testing.T) {
 	infix, ok := statement.Value.(*ast.InfixExpression)
 	require.True(t, ok)
 
-
 	exp, ok := infix.Left.(*ast.ReferencedExpression)
 	require.True(t, ok)
 
@@ -572,7 +570,6 @@ func TestOperationOnReferencedExpression(t *testing.T) {
 
 	assert.Equal(t, "-", infix.Operator)
 }
-
 
 func TestReferencedExpression(t *testing.T) {
 	input := `let s = sys.call(a, 100, fn(x, y) {return x + y;});`
@@ -615,3 +612,57 @@ func TestReferencedExpression(t *testing.T) {
 	assert.Len(t, arg3.Parameters, 2)
 }
 
+func TestParsingArrayLiterals(t *testing.T) {
+	input := `[1, func, 2 + 3, fn(a, b){return a + b;}];`
+
+	l := lexer.New(input, "non-file")
+	p := parser.New(l)
+
+	program := p.ParseProgram()
+	require.Len(t, p.Errors(), 0)
+	require.NotNil(t, program)
+	require.Len(t, program.Statements, 1)
+
+	statement, ok := program.Statements[0].(*ast.ExpressionStatement)
+	require.True(t, ok)
+
+	arr, ok := statement.Expression.(*ast.ArrayLiteral)
+	require.True(t, ok)
+
+	require.Len(t, arr.Elements, 4)
+
+	_, ok = arr.Elements[0].(*ast.IntegerLiteral)
+	assert.True(t, ok)
+	_, ok = arr.Elements[1].(*ast.Identifier)
+	assert.True(t, ok)
+	_, ok = arr.Elements[2].(*ast.InfixExpression)
+	assert.True(t, ok)
+	_, ok = arr.Elements[3].(*ast.FunctionLiteral)
+	assert.True(t, ok)
+}
+
+
+func TestParsingIndexExpression(t *testing.T) {
+	input := `myArray[1 + 2];`
+
+	l := lexer.New(input, "non-file")
+	p := parser.New(l)
+
+	program := p.ParseProgram()
+	require.Len(t, p.Errors(), 0)
+	require.NotNil(t, program)
+	require.Len(t, program.Statements, 1)
+
+	statement, ok := program.Statements[0].(*ast.ExpressionStatement)
+	require.True(t, ok)
+
+	ind, ok := statement.Expression.(*ast.IndexExpression)
+	require.True(t, ok)
+
+	left, ok := ind.Left.(*ast.Identifier)
+	assert.True(t, ok)
+	assert.Equal(t, "myArray", left.Value)
+	infix, ok := ind.Index.(*ast.InfixExpression)
+	assert.True(t, ok)
+	assert.Equal(t, "(1 + 2)", infix.String())
+}

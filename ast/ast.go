@@ -180,6 +180,29 @@ func (b *BooleanLiteral) StackLine() string {
 	return fmt.Sprintf("file: %s; line: %d", b.Token.FileName, b.Token.LineNumber)
 }
 
+type ArrayLiteral struct {
+	Token    tokens.Token
+	Elements []Expression
+}
+
+func (a *ArrayLiteral) expressionNode()      {}
+func (a *ArrayLiteral) TokenLiteral() string { return a.Token.Literal }
+func (a *ArrayLiteral) String() string {
+	out := bytes.Buffer{}
+	elems := make([]string, len(a.Elements))
+	for i, elem := range a.Elements {
+		elems[i] = elem.String()
+	}
+
+	out.WriteString("[")
+	out.WriteString(strings.Join(elems, ", "))
+	out.WriteString("]")
+	return out.String()
+}
+func (a *ArrayLiteral) StackLine() string {
+	return fmt.Sprintf("file: %s; line: %d", a.Token.FileName, a.Token.LineNumber)
+}
+
 type PrefixExpression struct {
 	Token    tokens.Token // Prefix operator, eg. !
 	Operator string
@@ -371,10 +394,33 @@ func (r *ReferencedExpression) String() string {
 	out.WriteString(r.Reference.String())
 	out.WriteString(".")
 	out.WriteString(r.Expression.String())
-	out.WriteString(";")
 
 	return out.String()
 }
 func (r *ReferencedExpression) StackLine() string {
 	return fmt.Sprintf("file: %s; line: %d", r.Token.FileName, r.Token.LineNumber)
+}
+
+type IndexExpression struct {
+	Token tokens.Token
+	Left  Expression
+	Index Expression
+}
+
+func (i *IndexExpression) expressionNode()      {}
+func (i *IndexExpression) TokenLiteral() string { return i.Token.Literal }
+func (i *IndexExpression) String() string {
+	out := bytes.Buffer{}
+
+	out.WriteString("(")
+	out.WriteString(i.Left.String())
+	out.WriteString("[")
+	out.WriteString(i.Index.String())
+	out.WriteString("]")
+	out.WriteString(")")
+
+	return out.String()
+}
+func (i *IndexExpression) StackLine() string {
+	return fmt.Sprintf("file: %s; line: %d", i.Token.FileName, i.Token.LineNumber)
 }
