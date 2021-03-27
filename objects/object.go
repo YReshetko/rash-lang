@@ -22,6 +22,7 @@ const (
 	BUILTIN_OBJ      ObjectType = "BUILTIN"
 	ARRAY_OBJ        ObjectType = "ARRAY"
 	HASH_OBJ         ObjectType = "HASH"
+	EXTERNAL_ENV     ObjectType = "EXTERNAL"
 )
 
 var (
@@ -171,6 +172,18 @@ func (f *Function) Inspect() string {
 	out.WriteString("\n}")
 
 	return out.String()
+}
+
+type ExternalEnvironment struct {
+	Environment *Environment
+}
+
+func (e *ExternalEnvironment) Type() ObjectType {
+	return EXTERNAL_ENV
+}
+
+func (e *ExternalEnvironment) Inspect() string {
+	return "external environment"
 }
 
 type Builtin struct {

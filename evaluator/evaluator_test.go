@@ -323,6 +323,54 @@ func TestIncludeDeclarations(t *testing.T) {
 			let b = deep.func(add);
 			b;
 		`, 58},
+		{
+			`
+			fn(a){
+				if (a == 1){
+					# inv "fixtures/inv_one.rs"
+				} else {
+					# inv "fixtures/inv_two.rs"
+				}
+			}(1).func()
+			`, 1001,
+		},
+		{
+			`
+			fn(a){
+				if (a == 1){
+					# inv "fixtures/inv_one.rs"
+				} else {
+					# inv "fixtures/inv_two.rs"
+				}
+			}(2).func()
+			`, 1002,
+		},
+		{
+			`
+			# inv_one "fixtures/inv_one.rs"
+			# inv_two "fixtures/inv_two.rs"
+			fn(a){
+				if (a == 1){
+					return inv_one;
+				} else {
+					return inv_two;
+				}
+			}(1).func()
+			`, 1001,
+		},
+		{
+			`
+			# inv_one "fixtures/inv_one.rs"
+			# inv_two "fixtures/inv_two.rs"
+			fn(a){
+				if (a == 1){
+					return inv_one;
+				} else {
+					return inv_two;
+				}
+			}(2).func()
+			`, 1002,
+		},
 	}
 	for _, test := range tests {
 		obj := testEval(t, test.input)

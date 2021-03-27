@@ -1,0 +1,1 @@
+let func = fn(){return 1001;}
