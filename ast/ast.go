@@ -268,7 +268,12 @@ func (i *InfixExpression) String() string {
 	if i.Left != nil {
 		out.WriteString(i.Left.String())
 	}
-	out.WriteString(" " + i.Operator + " ")
+	if i.Operator == "." {
+		out.WriteString(i.Operator)
+	} else {
+		out.WriteString(" " + i.Operator + " ")
+	}
+
 	if i.Right != nil {
 		out.WriteString(i.Right.String())
 	}
@@ -403,27 +408,6 @@ func (c *IncludeDeclaration) String() string {
 }
 func (c *IncludeDeclaration) StackLine() string {
 	return fmt.Sprintf("file: %s; line: %d", c.Token.FileName, c.Token.LineNumber)
-}
-
-type ReferencedExpression struct {
-	Token      tokens.Token
-	Reference  *Identifier
-	Expression Expression
-}
-
-func (r *ReferencedExpression) expressionNode()      {}
-func (r *ReferencedExpression) TokenLiteral() string { return r.Token.Literal }
-func (r *ReferencedExpression) String() string {
-	out := bytes.Buffer{}
-
-	out.WriteString(r.Reference.String())
-	out.WriteString(".")
-	out.WriteString(r.Expression.String())
-
-	return out.String()
-}
-func (r *ReferencedExpression) StackLine() string {
-	return fmt.Sprintf("file: %s; line: %d", r.Token.FileName, r.Token.LineNumber)
 }
 
 type IndexExpression struct {

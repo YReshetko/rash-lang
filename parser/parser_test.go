@@ -268,7 +268,7 @@ func TestComplexExpressions(t *testing.T) {
 		{"a * 2 / (3 + add(2 - b, sub(3), b + sq(14 - 3)) - -2) * 5", "(((a * 2) / ((3 + add((2 - b), sub(3), (b + sq((14 - 3))))) - (-2))) * 5)"},
 		{"a * [1, 2, 3, 4][b * c] * d", "((a * ([1, 2, 3, 4][(b * c)])) * d)"},
 		{"add(a * b[2], b[1], 2 * [1, 2][1])", "add((a * (b[2])), (b[1]), (2 * ([1, 2][1])))"},
-		{"add(a * b[2], import.arr[1 + func(a)], 2 * [1, 2][1])", "add((a * (b[2])), import.(arr[(1 + func(a))]), (2 * ([1, 2][1])))"},
+		{"add(a * b[2], import.arr[1 + func(a)], 2 * [1, 2][1])", "add((a * (b[2])), (import.(arr[(1 + func(a))])), (2 * ([1, 2][1])))"},
 	}
 
 	for _, test := range tests {
@@ -524,15 +524,19 @@ func TestSimpleReferencedExpression(t *testing.T) {
 	statement, ok := program.Statements[0].(*ast.ExpressionStatement)
 	require.True(t, ok)
 
-	exp, ok := statement.Expression.(*ast.ReferencedExpression)
+	exp, ok := statement.Expression.(*ast.InfixExpression)
 	require.True(t, ok)
 
-	assert.Equal(t, "sys", exp.Reference.Value)
+	left, ok := exp.Left.(*ast.Identifier)
+	require.True(t, ok)
+	assert.Equal(t, "sys", left.Value)
 
-	call, ok := exp.Expression.(*ast.CallExpression)
+	assert.Equal(t, ".", exp.Operator)
+
+	right, ok := exp.Right.(*ast.CallExpression)
 	require.True(t, ok)
 
-	callIdent, ok := call.Function.(*ast.Identifier)
+	callIdent, ok := right.Function.(*ast.Identifier)
 	require.True(t, ok)
 	assert.Equal(t, "time", callIdent.Value)
 }
@@ -555,20 +559,25 @@ func TestOperationOnReferencedExpression(t *testing.T) {
 	infix, ok := statement.Value.(*ast.InfixExpression)
 	require.True(t, ok)
 
-	exp, ok := infix.Left.(*ast.ReferencedExpression)
+	exp, ok := infix.Left.(*ast.InfixExpression)
 	require.True(t, ok)
 
-	assert.Equal(t, "sys", exp.Reference.Value)
-
-	ident, ok := exp.Expression.(*ast.Identifier)
+	left, ok := exp.Left.(*ast.Identifier)
 	require.True(t, ok)
-	assert.Equal(t, "value", ident.Value)
+	assert.Equal(t, "sys", left.Value)
 
-	callIdent, ok := infix.Right.(*ast.IntegerLiteral)
+	assert.Equal(t, ".", exp.Operator)
+
+	right, ok := exp.Right.(*ast.Identifier)
 	require.True(t, ok)
-	assert.Equal(t, int64(10), callIdent.Value)
+
+	assert.Equal(t, "value", right.Value)
 
 	assert.Equal(t, "-", infix.Operator)
+
+	intLit, ok := infix.Right.(*ast.IntegerLiteral)
+	require.True(t, ok)
+	assert.Equal(t, int64(10), intLit.Value)
 }
 
 func TestReferencedExpression(t *testing.T) {
@@ -585,29 +594,34 @@ func TestReferencedExpression(t *testing.T) {
 	statement, ok := program.Statements[0].(*ast.LetStatement)
 	require.True(t, ok)
 
-	exp, ok := statement.Value.(*ast.ReferencedExpression)
+	exp, ok := statement.Value.(*ast.InfixExpression)
 	require.True(t, ok)
 
-	assert.Equal(t, "sys", exp.Reference.Value)
 
-	call, ok := exp.Expression.(*ast.CallExpression)
+	left, ok := exp.Left.(*ast.Identifier)
+	require.True(t, ok)
+	assert.Equal(t, "sys", left.Value)
+
+	assert.Equal(t, ".", exp.Operator)
+
+	right, ok := exp.Right.(*ast.CallExpression)
 	require.True(t, ok)
 
-	callIdent, ok := call.Function.(*ast.Identifier)
+	callIdent, ok := right.Function.(*ast.Identifier)
 	require.True(t, ok)
 	assert.Equal(t, "call", callIdent.Value)
 
-	require.Len(t, call.Arguments, 3)
+	require.Len(t, right.Arguments, 3)
 
-	arg1, ok := call.Arguments[0].(*ast.Identifier)
+	arg1, ok := right.Arguments[0].(*ast.Identifier)
 	require.True(t, ok)
 	assert.Equal(t, "a", arg1.Value)
 
-	arg2, ok := call.Arguments[1].(*ast.IntegerLiteral)
+	arg2, ok := right.Arguments[1].(*ast.IntegerLiteral)
 	require.True(t, ok)
 	assert.Equal(t, int64(100), arg2.Value)
 
-	arg3, ok := call.Arguments[2].(*ast.FunctionLiteral)
+	arg3, ok := right.Arguments[2].(*ast.FunctionLiteral)
 	require.True(t, ok)
 	assert.Len(t, arg3.Parameters, 2)
 }

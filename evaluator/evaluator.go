@@ -27,15 +27,7 @@ func Eval(node ast.Node, environment *objects.Environment) objects.Object {
 		}
 		return evalPrefixExpression(node.Operator, right)
 	case *ast.InfixExpression:
-		left := Eval(node.Left, environment)
-		if isError(left) {
-			return left
-		}
-		right := Eval(node.Right, environment)
-		if isError(right) {
-			return right
-		}
-		return evalInfixExpression(node.Operator, left, right)
+		return evalInfixExpression(node, environment)
 	case *ast.IfExpression:
 		return evalIfExpression(node, environment)
 	case *ast.IntegerLiteral:
@@ -92,12 +84,11 @@ func Eval(node ast.Node, environment *objects.Environment) objects.Object {
 			return index
 		}
 		return evalIndexExpression(left, index)
-	case *ast.ReferencedExpression:
-		return evalReferencedExpression(node, environment)
 	}
 
 	return objects.NULL
 }
+
 
 func evalHashLiteral(node *ast.HashLiteral, environment *objects.Environment) objects.Object {
 	hash := &objects.Hash{
@@ -162,37 +153,6 @@ func evalArrayIndexExpression(left objects.Object, index objects.Object) objects
 
 }
 
-func evalReferencedExpression(node *ast.ReferencedExpression, environment *objects.Environment) objects.Object {
-	_, ok := environment.Get(node.Reference.Value)
-	if ok {
-		// TODO Can be implemented if we have objects or builtin types functions
-		return newError("unsupported call on %s", node.Reference.Token.Literal)
-	}
-
-	extEnv, ok := environment.GetExternalEnvironment(node.Reference.Value)
-	if !ok {
-		return newError("alias %s not found, check includes section", node.Reference.Value)
-	}
-
-	switch n := node.Expression.(type) {
-	case *ast.Identifier:
-		return evalIdentifier(n, extEnv)
-	case *ast.CallExpression:
-		function := Eval(n.Function, extEnv)
-		if isError(function) {
-			return function
-		}
-		args := evalExpressions(n.Arguments, environment)
-		if len(args) == 1 && isError(args[0]) {
-			return args[0]
-		}
-		return applyFunction(function, args)
-	default:
-		return newError("unsupported reference call %s", node.Expression.TokenLiteral())
-	}
-
-}
-
 func evalDeclarationStatement(node *ast.DeclarationStatement, environment *objects.Environment) objects.Object {
 	include, ok := node.Declaration.(*ast.IncludeDeclaration)
 	if !ok {
@@ -222,7 +182,7 @@ func evalDeclarationStatement(node *ast.DeclarationStatement, environment *objec
 
 	environment.AddExternalEnvironment(include.Alias.Value, externalEnv)
 
-	return objects.NULL
+	return &objects.ExternalEnvironment{Environment: externalEnv}
 }
 
 func applyFunction(function objects.Object, args []objects.Object) objects.Object {
@@ -275,6 +235,11 @@ func evalIdentifier(node *ast.Identifier, environment *objects.Environment) obje
 	if val, ok := environment.Get(node.Value); ok {
 		return val
 	}
+
+	if val, ok := environment.GetExternalEnvironment(node.Value); ok {
+		return &objects.ExternalEnvironment{Environment: val}
+	}
+
 	if val, ok := builtins[node.Value]; ok {
 		return val
 	}
@@ -304,7 +269,58 @@ func isTruthy(obj objects.Object) bool {
 	}
 }
 
-func evalInfixExpression(operator string, left objects.Object, right objects.Object) objects.Object {
+func evalInfixExpression(node *ast.InfixExpression, environment *objects.Environment) objects.Object {
+	left := Eval(node.Left, environment)
+	if isError(left) {
+		return left
+	}
+	switch node.Operator {
+	case ".":
+		return evalDottedExpression(left, node.Right, environment)
+	default:
+		right := Eval(node.Right, environment)
+		if isError(right) {
+			return right
+		}
+		return evalNativeInfixExpression(node.Operator, left, right)
+	}
+}
+
+func evalDottedExpression(left objects.Object, right ast.Expression, environment *objects.Environment) objects.Object {
+	switch leftExp := left.(type) {
+	case *objects.ExternalEnvironment:
+		switch n := right.(type) {
+		case *ast.Identifier:
+			return evalIdentifier(n, leftExp.Environment)
+		case *ast.CallExpression:
+			function := Eval(n.Function, leftExp.Environment)
+			if isError(function) {
+				return function
+			}
+			args := evalExpressions(n.Arguments, environment)
+			if len(args) == 1 && isError(args[0]) {
+				return args[0]
+			}
+			return applyFunction(function, args)
+		case *ast.IndexExpression:
+			left := Eval(n.Left, leftExp.Environment)
+			if isError(left) {
+				return left
+			}
+			index := Eval(n.Index, environment)
+			if isError(index) {
+				return index
+			}
+			return evalIndexExpression(left, index)
+		default:
+			return newError("unsupported reference call %s", right.TokenLiteral())
+		}
+	default:
+		return newError("unsupported reference call on :%s", left.Type())
+	}
+}
+
+func evalNativeInfixExpression(operator string, left objects.Object, right objects.Object) objects.Object {
 	switch {
 	case left.Type() == objects.INTEGER_OBJ && right.Type() == objects.INTEGER_OBJ:
 		return evalIntegerInfixExpression(operator, left, right)
