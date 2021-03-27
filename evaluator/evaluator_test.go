@@ -3,12 +3,17 @@ package evaluator_test
 import (
 	"github.com/YReshetko/rash-lang/evaluator"
 	"github.com/YReshetko/rash-lang/lexer"
+	"github.com/YReshetko/rash-lang/loaders"
 	"github.com/YReshetko/rash-lang/objects"
 	"github.com/YReshetko/rash-lang/parser"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
+
+func init() {
+	evaluator.ScriptLoader = loaders.ScriptLoader
+}
 
 func TestIntegerEval(t *testing.T) {
 	tests := []struct {
@@ -455,10 +460,10 @@ func TestHashLiterals(t *testing.T) {
 }
 
 func TestHashIndexExpression(t *testing.T) {
-	tests := []struct{
+	tests := []struct {
 		input string
 		value interface{}
-	} {
+	}{
 		{`{"foo": 5}["foo"]`, 5},
 		{`{"foo": 5}["bar"]`, nil},
 		{`let key = "bar"; {"foo": 5}[key]`, nil},

@@ -49,6 +49,8 @@ func (s sysPlugin) length(args ...interface{}) ([]interface{}, error) {
 		return []interface{}{len(arg)}, nil
 	case []interface{}:
 		return []interface{}{len(arg)}, nil
+	case map[interface{}]interface{}:
+		return []interface{}{len(arg)}, nil
 	default:
 		return nil, fmt.Errorf("unexpected value type %T to `len` function", value)
 	}

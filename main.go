@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/YReshetko/rash-lang/evaluator"
 	"github.com/YReshetko/rash-lang/extensions"
+	"github.com/YReshetko/rash-lang/loaders"
 	"github.com/YReshetko/rash-lang/repl"
 	"log"
 	"os"
@@ -32,6 +33,8 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	evaluator.ScriptLoader = loaders.ScriptLoader
 	evaluator.InitRegistry(reg)
 
 	fmt.Println(banner)

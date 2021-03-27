@@ -110,6 +110,12 @@ func getValue(object objects.Object) interface{} {
 			arr[i] = getValue(element)
 		}
 		return arr
+	case *objects.Hash:
+		m := map[interface{}]interface{}{}
+		for _, v := range obj.Pairs{
+			m[getValue(v.Key)] = getValue(v.Value)
+		}
+		return m
 	default:
 		return nil
 	}

@@ -1,14 +1,17 @@
 package evaluator
 
 import (
+	"errors"
 	"fmt"
 	"github.com/YReshetko/rash-lang/ast"
-	"github.com/YReshetko/rash-lang/lexer"
 	"github.com/YReshetko/rash-lang/objects"
-	"github.com/YReshetko/rash-lang/parser"
-	"io/ioutil"
-	"strings"
 )
+
+type scriptLoader func(path string) (*objects.Environment, error)
+
+var ScriptLoader scriptLoader = func(path string) (*objects.Environment, error) {
+	return nil, errors.New("script loader is not defined")
+}
 
 func Eval(node ast.Node, environment *objects.Environment) objects.Object {
 	switch node := node.(type) {
@@ -89,7 +92,6 @@ func Eval(node ast.Node, environment *objects.Environment) objects.Object {
 	return objects.NULL
 }
 
-
 func evalHashLiteral(node *ast.HashLiteral, environment *objects.Environment) objects.Object {
 	hash := &objects.Hash{
 		Pairs: map[objects.HashKey]objects.HashPair{},
@@ -159,30 +161,14 @@ func evalDeclarationStatement(node *ast.DeclarationStatement, environment *objec
 		return newError("unknown declaration type: %s", node.Declaration.String())
 	}
 
-	src, err := ioutil.ReadFile(include.Include.Value)
+	extEnv, err := ScriptLoader(include.Include.Value)
 	if err != nil {
-		return newError("unable to load included script %s due to %v", include.Include.Value, err)
+		return newError("unable preload external script:\n%s", err.Error())
 	}
 
-	l := lexer.New(string(src), include.Include.Value)
-	p := parser.New(l)
+	environment.AddExternalEnvironment(include.Alias.Value, extEnv)
 
-	program := p.ParseProgram()
-
-	if len(p.Errors()) != 0 {
-		return newError("unable to evaluate included script %s due to:\n %s", include.Include.Value, strings.Join(p.Errors(), ";\n"))
-	}
-
-	externalEnv := objects.NewEnvironment()
-
-	obj := Eval(program, externalEnv)
-	if obj.Type() == objects.ERROR_OBJ {
-		return obj
-	}
-
-	environment.AddExternalEnvironment(include.Alias.Value, externalEnv)
-
-	return &objects.ExternalEnvironment{Environment: externalEnv}
+	return &objects.ExternalEnvironment{Environment: extEnv}
 }
 
 func applyFunction(function objects.Object, args []objects.Object) objects.Object {
@@ -220,13 +206,13 @@ func extendFunctionEnvironment(fn *objects.Function, args []objects.Object) *obj
 }
 
 func evalExpressions(arguments []ast.Expression, environment *objects.Environment) []objects.Object {
-	result := []objects.Object{}
-	for _, argument := range arguments {
+	result := make([]objects.Object, len(arguments))
+	for i, argument := range arguments {
 		evaluated := Eval(argument, environment)
 		if isError(evaluated) {
 			return []objects.Object{evaluated}
 		}
-		result = append(result, evaluated)
+		result[i] = evaluated
 	}
 	return result
 }
