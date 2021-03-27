@@ -266,9 +266,9 @@ func TestComplexExpressions(t *testing.T) {
 		{"a + -5 * -3", "(a + ((-5) * (-3)))"},
 		{"a * 2 / (3 + -2) * 5", "(((a * 2) / (3 + (-2))) * 5)"},
 		{"a * 2 / (3 + add(2 - b, sub(3), b + sq(14 - 3)) - -2) * 5", "(((a * 2) / ((3 + add((2 - b), sub(3), (b + sq((14 - 3))))) - (-2))) * 5)"},
-		{"a * [1, 2, 3, 4][b * c] * d","((a * ([1, 2, 3, 4][(b * c)])) * d)"},
-		{"add(a * b[2], b[1], 2 * [1, 2][1])","add((a * (b[2])), (b[1]), (2 * ([1, 2][1])))"},
-		{"add(a * b[2], import.arr[1 + func(a)], 2 * [1, 2][1])","add((a * (b[2])), import.(arr[(1 + func(a))]), (2 * ([1, 2][1])))"},
+		{"a * [1, 2, 3, 4][b * c] * d", "((a * ([1, 2, 3, 4][(b * c)])) * d)"},
+		{"add(a * b[2], b[1], 2 * [1, 2][1])", "add((a * (b[2])), (b[1]), (2 * ([1, 2][1])))"},
+		{"add(a * b[2], import.arr[1 + func(a)], 2 * [1, 2][1])", "add((a * (b[2])), import.(arr[(1 + func(a))]), (2 * ([1, 2][1])))"},
 	}
 
 	for _, test := range tests {
@@ -641,7 +641,6 @@ func TestParsingArrayLiterals(t *testing.T) {
 	assert.True(t, ok)
 }
 
-
 func TestParsingIndexExpression(t *testing.T) {
 	input := `myArray[1 + 2];`
 
@@ -665,4 +664,89 @@ func TestParsingIndexExpression(t *testing.T) {
 	infix, ok := ind.Index.(*ast.InfixExpression)
 	assert.True(t, ok)
 	assert.Equal(t, "(1 + 2)", infix.String())
+}
+
+func TestParsingHashLiteralsStringKeys(t *testing.T) {
+	input := `{"one": 1, "two": 2, "three": 3};`
+	expected := map[string]int{
+		"one":   1,
+		"two":   2,
+		"three": 3,
+	}
+
+	l := lexer.New(input, "non-file")
+	p := parser.New(l)
+
+	program := p.ParseProgram()
+	require.Len(t, p.Errors(), 0)
+	require.NotNil(t, program)
+	require.Len(t, program.Statements, 1)
+
+	statement, ok := program.Statements[0].(*ast.ExpressionStatement)
+	require.True(t, ok)
+
+	hash, ok := statement.Expression.(*ast.HashLiteral)
+	require.True(t, ok)
+	require.Len(t, hash.Pairs, 3)
+
+	for k, v := range hash.Pairs {
+		strKey, ok := k.(*ast.StringLiteral)
+		assert.True(t, ok)
+		intVal, ok := v.(*ast.IntegerLiteral)
+		assert.True(t, ok)
+		exp, ok := expected[strKey.Value]
+		assert.True(t, ok)
+		assert.Equal(t, int64(exp), intVal.Value)
+	}
+}
+
+func TestParsingHashLiteralsEmpty(t *testing.T) {
+	input := `{};`
+
+	l := lexer.New(input, "non-file")
+	p := parser.New(l)
+
+	program := p.ParseProgram()
+	require.Len(t, p.Errors(), 0)
+	require.NotNil(t, program)
+	require.Len(t, program.Statements, 1)
+
+	statement, ok := program.Statements[0].(*ast.ExpressionStatement)
+	require.True(t, ok)
+
+	hash, ok := statement.Expression.(*ast.HashLiteral)
+	require.True(t, ok)
+	require.Len(t, hash.Pairs, 0)
+}
+
+func TestParsingHashLiteralsWithExpressions(t *testing.T) {
+	input := `{"one": 1 + 2, "two": 2 * 3, "three": 3/1};`
+	expected := map[string]string{
+		"one":   "(1 + 2)",
+		"two":   "(2 * 3)",
+		"three": "(3 / 1)",
+	}
+
+	l := lexer.New(input, "non-file")
+	p := parser.New(l)
+
+	program := p.ParseProgram()
+	require.Len(t, p.Errors(), 0)
+	require.NotNil(t, program)
+	require.Len(t, program.Statements, 1)
+
+	statement, ok := program.Statements[0].(*ast.ExpressionStatement)
+	require.True(t, ok)
+
+	hash, ok := statement.Expression.(*ast.HashLiteral)
+	require.True(t, ok)
+	require.Len(t, hash.Pairs, 3)
+
+	for k, v := range hash.Pairs {
+		strKey, ok := k.(*ast.StringLiteral)
+		assert.True(t, ok)
+		exp, ok := expected[strKey.Value]
+		assert.True(t, ok)
+		assert.Equal(t, exp, v.String())
+	}
 }

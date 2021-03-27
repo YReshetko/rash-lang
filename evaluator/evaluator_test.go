@@ -374,6 +374,66 @@ func TestArrayIndexExpression(t *testing.T) {
 	}
 }
 
+func TestHashLiterals(t *testing.T) {
+	input := `
+		let two = "two";
+		{
+			"one": 10 - 9,
+			two: 1 + 1,
+			"thr" + "ee": 6 / 2,
+			4: 4,
+			true: 5,
+			false: 6
+		}
+`
+	expected := map[objects.HashKey]int64{
+		(&objects.String{"one"}).HashKey():   1,
+		(&objects.String{"two"}).HashKey():   2,
+		(&objects.String{"three"}).HashKey(): 3,
+		(&objects.Integer{4}).HashKey():      4,
+		(&objects.Boolean{true}).HashKey():   5,
+		(&objects.Boolean{false}).HashKey():  6,
+	}
+
+	obj := testEval(t, input)
+	hash, ok := obj.(*objects.Hash)
+	require.True(t, ok)
+	for key, value := range expected {
+		pair, ok := hash.Pairs[key]
+		assert.True(t, ok)
+		assert.Equal(t, value, pair.Value.(*objects.Integer).Value)
+	}
+
+}
+
+func TestHashIndexExpression(t *testing.T) {
+	tests := []struct{
+		input string
+		value interface{}
+	} {
+		{`{"foo": 5}["foo"]`, 5},
+		{`{"foo": 5}["bar"]`, nil},
+		{`let key = "bar"; {"foo": 5}[key]`, nil},
+		{`let key = "foo"; {"foo": 5}[key]`, 5},
+		{`{}["foo"]`, nil},
+		{`{5: 5}[5]`, 5},
+		{`{true: 5}[true]`, 5},
+		{`{false: 5}[false]`, 5},
+		{`{"arr": [1, 2, 3]}["arr"]`, []interface{}{1, 2, 3}},
+	}
+	for _, test := range tests {
+		obj := testEval(t, test.input)
+		switch exp := test.value.(type) {
+		case int:
+			assertIntegerObject(t, obj, int64(exp))
+		case nil:
+			assertNullObject(t, obj)
+		case []interface{}:
+			assertArrayObject(t, obj, exp)
+		}
+	}
+}
+
 func assertArrayObject(t *testing.T, obj objects.Object, value []interface{}) {
 	arr, ok := obj.(*objects.Array)
 	require.True(t, ok)

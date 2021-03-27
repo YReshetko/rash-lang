@@ -21,3 +21,8 @@ let fib = fn(val){
 		return fib(val - 2) + fib(val - 1);
 	}
 }
+
+let map = {
+	"foo": fn() {return "foo";},
+	"bar": fn() {return "bar";},
+}

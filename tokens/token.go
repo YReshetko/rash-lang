@@ -5,8 +5,8 @@ const (
 	EOF     = "EOF"
 
 	// Identifiers + literals
-	IDENT = "IDENT" // variable names: foo, bar, i, x, y
-	INT   = "INT"
+	IDENT  = "IDENT" // variable names: foo, bar, i, x, y
+	INT    = "INT"
 	STRING = "STRING"
 
 	// Operators
@@ -27,6 +27,7 @@ const (
 	// Delimeters
 	COMMA     = ","
 	SEMICOLON = ";"
+	COLON     = ":"
 
 	// Declaration
 	HASH = "#" // sign to import script file

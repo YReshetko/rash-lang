@@ -203,6 +203,31 @@ func (a *ArrayLiteral) StackLine() string {
 	return fmt.Sprintf("file: %s; line: %d", a.Token.FileName, a.Token.LineNumber)
 }
 
+type HashLiteral struct {
+	Token    tokens.Token
+	Pairs map[Expression]Expression
+}
+
+func (h *HashLiteral) expressionNode()      {}
+func (h *HashLiteral) TokenLiteral() string { return h.Token.Literal }
+func (h *HashLiteral) String() string {
+	out := bytes.Buffer{}
+	pairs := make([]string, len(h.Pairs))
+	i := 0
+	for k, v := range h.Pairs {
+		pairs[i] = k.String() + ":"+v.String()
+		i++
+	}
+
+	out.WriteString("{")
+	out.WriteString(strings.Join(pairs, ", "))
+	out.WriteString("}")
+	return out.String()
+}
+func (h *HashLiteral) StackLine() string {
+	return fmt.Sprintf("file: %s; line: %d", h.Token.FileName, h.Token.LineNumber)
+}
+
 type PrefixExpression struct {
 	Token    tokens.Token // Prefix operator, eg. !
 	Operator string

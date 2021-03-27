@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/YReshetko/rash-lang/ast"
+	"hash/fnv"
 	"strings"
 )
 
@@ -20,6 +21,7 @@ const (
 	FUNCTION_OBJ     ObjectType = "FUNCTION"
 	BUILTIN_OBJ      ObjectType = "BUILTIN"
 	ARRAY_OBJ        ObjectType = "ARRAY"
+	HASH_OBJ         ObjectType = "HASH"
 )
 
 var (
@@ -28,6 +30,15 @@ var (
 
 	NULL = &Null{}
 )
+
+type HashKey struct {
+	Type  ObjectType
+	Value uint64
+}
+
+type Hashable interface {
+	HashKey() HashKey
+}
 
 type Object interface {
 	Type() ObjectType
@@ -46,6 +57,13 @@ func (i *Integer) Type() ObjectType {
 	return INTEGER_OBJ
 }
 
+func (i *Integer) HashKey() HashKey {
+	return HashKey{
+		Type:  i.Type(),
+		Value: uint64(i.Value),
+	}
+}
+
 type String struct {
 	Value string
 }
@@ -56,6 +74,14 @@ func (s *String) Inspect() string {
 
 func (s *String) Type() ObjectType {
 	return STRING_OBJ
+}
+func (s *String) HashKey() HashKey {
+	hash := fnv.New64()
+	_, _ = hash.Write([]byte(s.Value))
+	return HashKey{
+		Type:  s.Type(),
+		Value: hash.Sum64(),
+	}
 }
 
 type Boolean struct {
@@ -68,6 +94,19 @@ func (b *Boolean) Inspect() string {
 
 func (b *Boolean) Type() ObjectType {
 	return BOOLEAN_OBJ
+}
+
+func (b *Boolean) HashKey() HashKey {
+	var value uint64
+	if b.Value {
+		value = 1
+	} else {
+		value = 0
+	}
+	return HashKey{
+		Type:  b.Type(),
+		Value: value,
+	}
 }
 
 type Null struct{}
@@ -165,6 +204,36 @@ func (a *Array) Inspect() string {
 	out.WriteString("[")
 	out.WriteString(strings.Join(elements, ", "))
 	out.WriteString("]")
+
+	return out.String()
+}
+
+type HashPair struct {
+	Key   Object
+	Value Object
+}
+
+type Hash struct {
+	Pairs map[HashKey]HashPair
+}
+
+func (a *Hash) Type() ObjectType {
+	return HASH_OBJ
+}
+
+func (a *Hash) Inspect() string {
+	out := bytes.Buffer{}
+
+	elements := make([]string, len(a.Pairs))
+	i := 0
+	for _, v := range a.Pairs {
+		elements[i] = v.Key.Inspect() + ":" + v.Value.Inspect()
+		i++
+	}
+
+	out.WriteString("{")
+	out.WriteString(strings.Join(elements, ", "))
+	out.WriteString("}")
 
 	return out.String()
 }
