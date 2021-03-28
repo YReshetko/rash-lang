@@ -35,6 +35,7 @@ func main() {
 	}
 
 	evaluator.ScriptLoader = loaders.ScriptLoader
+	evaluator.Evaluate = evaluator.Eval
 	evaluator.InitRegistry(reg)
 
 	fmt.Println(banner)

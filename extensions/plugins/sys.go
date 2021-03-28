@@ -14,6 +14,7 @@ const (
 )
 
 type sysPlugin struct{}
+type Callback func(args ...interface{}) ([]interface{}, error)
 
 func (s sysPlugin) Eval(fnName string, args ...interface{}) ([]interface{}, error) {
 	switch fnName {
@@ -21,8 +22,19 @@ func (s sysPlugin) Eval(fnName string, args ...interface{}) ([]interface{}, erro
 		return s.length(args...)
 	case "time":
 		return s.time()
+	case "print":
+		return s.print(args...)
 	default:
 		return nil, fmt.Errorf("function %s not found in %s extension", fnName, pkg)
+	}
+}
+
+func (s sysPlugin) Call(fnName string, callback func(args ...interface{}) ([]interface{}, error), args ...interface{}) ([]interface{}, error) {
+	switch fnName {
+	case "tick":
+		return s.tick(callback, args...)
+	default:
+		return nil, fmt.Errorf("callback function %s not found in %s extension", fnName, pkg)
 	}
 }
 
@@ -58,4 +70,35 @@ func (s sysPlugin) length(args ...interface{}) ([]interface{}, error) {
 
 func (s sysPlugin) time() ([]interface{}, error) {
 	return []interface{}{time.Now().Format(time.RFC3339)}, nil
+}
+
+func (s sysPlugin) print(args ...interface{}) ([]interface{}, error) {
+	fmt.Println(args...)
+	return nil, nil
+}
+
+func (s sysPlugin) tick(callback Callback, args ...interface{}) ([]interface{}, error) {
+	if len(args) != 1 {
+		return nil, fmt.Errorf("wrong number of arguments to `tick`; got=%d, expected=1", len(args))
+	}
+	duration, ok := args[0].(int64)
+	if !ok {
+		return nil, fmt.Errorf("unexpected argument type sent to `tick`; got=%d, expected=int", args[0])
+	}
+
+	ticker := time.NewTicker(time.Second * time.Duration(duration))
+	go func() {
+		for {
+			select {
+			case x := <-ticker.C:
+				_, err := callback(x.Format(time.RFC3339))
+				if err != nil {
+					ticker.Stop()
+					return
+				}
+			}
+		}
+	}()
+
+	return nil, nil
 }

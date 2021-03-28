@@ -11,6 +11,14 @@ let time = fn(){
 	return eval("sys", "time");
 }
 
+let print = fn(value){
+	return eval("sys", "print", value);
+}
+
+let ticker = fn(interval, func){
+	return call("sys", "tick", func, interval)
+}
+
 let fib = fn(val){
 	if (val == 1) {
 		return 0;

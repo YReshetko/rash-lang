@@ -43,3 +43,12 @@ func (r *Registry) Eval(pkgName, fnName string, args ...interface{}) ([]interfac
 
 	return plug.Eval(fnName, args...)
 }
+
+
+func (r *Registry) Call(pkgName, fnName string, fn func(args ...interface{}) ([]interface{}, error), args ...interface{}) ([]interface{}, error) {
+	plug, ok := r.plugins[pkgName]
+	if !ok {
+		return nil, fmt.Errorf("package %s not found in extensions", pkgName)
+	}
+	return plug.Call(fnName, fn, args...)
+}
