@@ -14,7 +14,7 @@
 Is an opensource scripting programming language with an interpreter written on golang. 
 The language functionality is simply extended by writing plugins.
 
-#Language types
+# Language types
 
 * Integer, defined by literal, for example ``` let a = 42;```
 * Boolean, defined by next literals: `true`, `false`. For example ``` let bool = true;```
@@ -29,14 +29,14 @@ For example:
   }
   ```
 
-#Statements
+# Statements
 
 * `let` - creates a new variable in execution scope and assigns a value, for example: ```let a = 10;```
 * Assign - assigns value to existing variable or map/array elements in scope, for example: ```a = 12; map["one"] = true; arr[10] = 50;```
 * `return` - returns value from functional call. Can be omitted, because the language returns value of last execution in a block. For example: ```return 10;``` and ```10;``` are equal. The difference is that explicit `return` call can break function execution.
 * Declaration - rash supports import one script files to another. The declaration starts from `#` then alias and string literal with path to the script. For example: ```# sys "lib/sys.rs"```. Then variables of imported script available by alias, for example: ```let a = sys.tick;```
 
-#Builtin funcctions
+# Builtin funcctions
 
 * `eval` - allows to make a single call to plugin, signature: ```eval(<package name>, <function name>, <any number of arguments>);```
     * `package name` - string literal, defined in plugin and registered in an interpreter with that name;
@@ -48,7 +48,7 @@ For example:
     * `callback function` - the function defined in rash language which arguments number and returned value corresponds to plugin specification
     * `any number of arguments` - arguments which has to be sent to particular function in the plugin;
 
-#Operations
+# Operations
 
 * `+` - supported on strings and integers
 * `-` - supported on integers
