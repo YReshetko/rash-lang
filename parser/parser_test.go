@@ -597,7 +597,6 @@ func TestReferencedExpression(t *testing.T) {
 	exp, ok := statement.Value.(*ast.InfixExpression)
 	require.True(t, ok)
 
-
 	left, ok := exp.Left.(*ast.Identifier)
 	require.True(t, ok)
 	assert.Equal(t, "sys", left.Value)
@@ -763,4 +762,122 @@ func TestParsingHashLiteralsWithExpressions(t *testing.T) {
 		assert.True(t, ok)
 		assert.Equal(t, exp, v.String())
 	}
+}
+
+func TestAssignExpressionToLiteral(t *testing.T) {
+	input := `foo = "bar";`
+
+	l := lexer.New(input, "non-file")
+	p := parser.New(l)
+
+	program := p.ParseProgram()
+	require.Len(t, p.Errors(), 0)
+	require.NotNil(t, program)
+	require.Len(t, program.Statements, 1)
+
+	statement, ok := program.Statements[0].(*ast.ExpressionStatement)
+	require.True(t, ok)
+
+	infix, ok := statement.Expression.(*ast.InfixExpression)
+	require.True(t, ok)
+
+	ident, ok := infix.Left.(*ast.Identifier)
+	require.True(t, ok)
+	assert.Equal(t, "foo", ident.Value)
+
+	assert.Equal(t, "=", infix.Operator)
+
+	value, ok := infix.Right.(*ast.StringLiteral)
+	require.True(t, ok)
+	assert.Equal(t, "bar", value.Value)
+}
+
+func TestAssignExpressionToIndex(t *testing.T) {
+	input := `map["foo"] = "bar" + "bazz";`
+
+	l := lexer.New(input, "non-file")
+	p := parser.New(l)
+
+	program := p.ParseProgram()
+	require.Len(t, p.Errors(), 0)
+	require.NotNil(t, program)
+	require.Len(t, program.Statements, 1)
+
+	statement, ok := program.Statements[0].(*ast.ExpressionStatement)
+	require.True(t, ok)
+
+	infix, ok := statement.Expression.(*ast.InfixExpression)
+	require.True(t, ok)
+
+	_, ok = infix.Left.(*ast.IndexExpression)
+	require.True(t, ok)
+
+	assert.Equal(t, "=", infix.Operator)
+
+	_, ok = infix.Right.(*ast.InfixExpression)
+	require.True(t, ok)
+}
+
+func TestAssignExpressionToIndexFromFunc(t *testing.T) {
+	input := `func()[1] = fn(){return true;}();`
+
+	l := lexer.New(input, "non-file")
+	p := parser.New(l)
+
+	program := p.ParseProgram()
+	require.Len(t, p.Errors(), 0)
+	require.NotNil(t, program)
+	require.Len(t, program.Statements, 1)
+
+	statement, ok := program.Statements[0].(*ast.ExpressionStatement)
+	require.True(t, ok)
+
+	infix, ok := statement.Expression.(*ast.InfixExpression)
+	require.True(t, ok)
+
+	_, ok = infix.Left.(*ast.IndexExpression)
+	require.True(t, ok)
+
+	assert.Equal(t, "=", infix.Operator)
+
+	_, ok = infix.Right.(*ast.CallExpression)
+	require.True(t, ok)
+}
+
+func TestAssignExpressionsExternal(t *testing.T) {
+	input := `pkg.var = a + 2`
+
+	l := lexer.New(input, "non-file")
+	p := parser.New(l)
+
+	program := p.ParseProgram()
+	require.Len(t, p.Errors(), 0)
+	require.NotNil(t, program)
+	require.Len(t, program.Statements, 1)
+
+	statement, ok := program.Statements[0].(*ast.ExpressionStatement)
+	require.True(t, ok)
+
+	infix, ok := statement.Expression.(*ast.InfixExpression)
+	require.True(t, ok)
+	assert.Equal(t, "((pkg.var) = (a + 2))", infix.String())
+}
+
+func TestAssignExpressionsArray(t *testing.T) {
+	input := `arr[10] = a + 2`
+
+	l := lexer.New(input, "non-file")
+	p := parser.New(l)
+
+	program := p.ParseProgram()
+	require.Len(t, p.Errors(), 0)
+	require.NotNil(t, program)
+	require.Len(t, program.Statements, 1)
+
+	statement, ok := program.Statements[0].(*ast.ExpressionStatement)
+	require.True(t, ok)
+
+	infix, ok := statement.Expression.(*ast.InfixExpression)
+	require.True(t, ok)
+	assert.Equal(t, "((arr[10]) = (a + 2))", infix.String())
 }

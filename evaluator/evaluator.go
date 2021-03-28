@@ -152,7 +152,6 @@ func evalArrayIndexExpression(left objects.Object, index objects.Object) objects
 		return objects.NULL
 	}
 	return arr.Elements[ind]
-
 }
 
 func evalDeclarationStatement(node *ast.DeclarationStatement, environment *objects.Environment) objects.Object {
@@ -256,20 +255,91 @@ func isTruthy(obj objects.Object) bool {
 }
 
 func evalInfixExpression(node *ast.InfixExpression, environment *objects.Environment) objects.Object {
-	left := Eval(node.Left, environment)
-	if isError(left) {
-		return left
-	}
+
 	switch node.Operator {
 	case ".":
+		left := Eval(node.Left, environment)
+		if isError(left) {
+			return left
+		}
 		return evalDottedExpression(left, node.Right, environment)
+	case "=":
+		return evalAssignExpression(node, environment)
 	default:
+		left := Eval(node.Left, environment)
+		if isError(left) {
+			return left
+		}
 		right := Eval(node.Right, environment)
 		if isError(right) {
 			return right
 		}
 		return evalNativeInfixExpression(node.Operator, left, right)
 	}
+}
+
+func evalAssignExpression(node *ast.InfixExpression, environment *objects.Environment) objects.Object {
+	val := Eval(node.Right, environment)
+	if isError(val) {
+		return val
+	}
+	switch n := node.Left.(type) {
+	case *ast.Identifier:
+		value, ok := environment.Update(n.Value, val)
+		if !ok {
+			return newError("identifier not defined: %s", n.Value)
+		}
+		return value
+	case *ast.IndexExpression:
+		left := Eval(n.Left, environment)
+		if isError(left) {
+			return left
+		}
+		index := Eval(n.Index, environment)
+		if isError(index) {
+			return index
+		}
+		return evalAssignIndexExpression(left, index, val)
+	case *ast.InfixExpression:
+		return newError("unsupported multiple/inner/crosspackage assignments: %s", node.Right.TokenLiteral())
+	default:
+		return newError("unsupported assignment type receiver: %s", node.Right.TokenLiteral())
+	}
+}
+
+func evalAssignIndexExpression(left objects.Object, index, value objects.Object) objects.Object {
+	switch {
+	case left.Type() == objects.ARRAY_OBJ && index.Type() == objects.INTEGER_OBJ:
+		return evalAssignArrayIndexExpression(left, index, value)
+	case left.Type() == objects.HASH_OBJ:
+		return evalAssignHashIndexExpression(left, index, value)
+	default:
+		return newError("index operator not supported for: %s", left.Type())
+	}
+}
+
+func evalAssignHashIndexExpression(left objects.Object, index, value objects.Object) objects.Object {
+	hash := left.(*objects.Hash)
+	ind, ok := index.(objects.Hashable)
+	if !ok {
+		return newError("unusable as a hash key: %s", index.Type())
+	}
+	hash.Pairs[ind.HashKey()] = objects.HashPair{
+		Key:   index,
+		Value: value,
+	}
+	return value
+}
+
+func evalAssignArrayIndexExpression(left objects.Object, index, value objects.Object) objects.Object {
+	arr := left.(*objects.Array)
+	ind := index.(*objects.Integer).Value
+	max := int64(len(arr.Elements) - 1)
+	if 0 > ind || ind > max {
+		return newError("index outbound: len=%d, ind=%d", max + 1, ind)
+	}
+	arr.Elements[ind] = value
+	return value
 }
 
 func evalDottedExpression(left objects.Object, right ast.Expression, environment *objects.Environment) objects.Object {

@@ -487,6 +487,33 @@ func TestHashIndexExpression(t *testing.T) {
 	}
 }
 
+func TestAssignExpression(t *testing.T) {
+	tests := []struct {
+		input string
+		value interface{}
+	}{
+		{"let a = 5; a = 10; a;", 10},
+		{`let a = ["hello", "world"]; a[1] = "rash"; a;`, []interface{}{"hello", "rash"}},
+		{`let m = {true: false, false: true}; m[true] = true; m[true];`, true},
+		{`let func = fn(){return {"one":"hello","two": "world"};}; let b = {}; b = func(); b["two"];`, "world"},
+		{`let m = {"one":"hello","two": "world"}; let func = fn(){return m;}; func()["two"] = "rash"; m["two"];`, "rash"},
+	}
+	for _, test := range tests {
+		obj := testEval(t, test.input)
+		switch exp := test.value.(type) {
+		case int:
+			assertIntegerObject(t, obj, int64(exp))
+		case string:
+			assertStringObject(t, obj, exp)
+		case []interface{}:
+			assertArrayObject(t, obj, exp)
+		case bool:
+			assertBooleanObject(t, obj, exp)
+		}
+
+	}
+}
+
 func assertArrayObject(t *testing.T, obj objects.Object, value []interface{}) {
 	arr, ok := obj.(*objects.Array)
 	require.True(t, ok)

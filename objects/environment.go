@@ -38,6 +38,15 @@ func (e *Environment) Set(key string, value Object) Object {
 	return value
 }
 
+func (e *Environment) Update(key string, value Object) (Object, bool) {
+	val, ok := e.store[key]
+	if !ok {
+		return value, false
+	}
+	e.store[key] = value
+	return val, true
+}
+
 func (e *Environment) AddExternalEnvironment(alias string, env *Environment) {
 	e.externalEnvironments[alias] = env
 }
