@@ -57,6 +57,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerInfix(tokens.LPAREN, p.parseCallExpression)
 	p.registerInfix(tokens.DOT, p.parseInfixExpression)
 	p.registerInfix(tokens.LBRACKET, p.parseInfixIndexExpression)
+	p.registerInfix(tokens.ASSIGN, p.parseInfixExpression)
 
 	// Call twice to set current and peek tokens
 	p.nextToken()
@@ -172,6 +173,7 @@ func (p *Parser) parseIncludeDeclarationStatement() ast.Statement {
 const (
 	_ int = iota
 	LOWEST
+	ASSIGN      // =
 	EQUAL       // ==
 	LESSGREATER // > or <
 	SUM         // +
@@ -183,6 +185,7 @@ const (
 )
 
 var precedences = map[tokens.TokenType]int{
+	tokens.ASSIGN:   ASSIGN,
 	tokens.EQ:       EQUAL,
 	tokens.NOT_EQ:   EQUAL,
 	tokens.LT:       LESSGREATER,
