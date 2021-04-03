@@ -17,6 +17,7 @@ The language functionality is simply extended by writing plugins.
 # Language types
 
 * Integer, defined by literal, for example ``` let a = 42;```
+* Double, defined by literal, for example ``` let a = 42.12;```
 * Boolean, defined by next literals: `true`, `false`. For example ``` let bool = true;```
 * String, defined by double quotes: `"Hello world!"`
 * Array, defined by `[` from left side and `]` - from right. Values are separated by a comma, for example: ```let arr = [1, "hello", true, "world"];```
@@ -59,6 +60,7 @@ For example:
 * `>` - ...
 * `<` - ...
 * `if` - classic if operator which supports two types: ```if (<condition>) {<block statements>}``` and ```if (<condition>) {<block statements>} else {<block statements>}```. Can be used as ternary operator: ```let a = if (b == c) {true} else {false}``` 
+* `for` - supports next formats: ```for(){<block statements>}```, ```for(<condition>){<block statements>}```, ```for(<condition>; <expression>){<block statements>}``` and ```for (<statement>; <condition>; <expression>) {<block statements>}```
 
 # How to extend lib
 
@@ -78,3 +80,14 @@ And inject it into interpreter by modifying main.go. Also to include the functio
 # Run
 
 At the moment there is supported only one way, it is run REPL app: `make run` . You need go installed on your machine. 
+
+# Examples
+### HTTP Server:
+```
+# http "http.rs";
+let server = http.new_server("3000");
+server["register"]("GET", "/hello", fn(){return "Hello world"});
+server["start"]();
+```
+
+After that the endpoint is active and you can see the response on `localhost:3000/hello`

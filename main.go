@@ -53,5 +53,9 @@ func extensionsRegistry() (*extensions.Registry, error) {
 	if err := r.Add("bin/sys.so", "SysPlugin"); err != nil {
 		return nil, err
 	}
+
+	if err := r.Add("bin/http.so", "HttpPlugin"); err != nil {
+		return nil, err
+	}
 	return r, nil
 }

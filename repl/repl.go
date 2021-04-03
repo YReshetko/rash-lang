@@ -12,9 +12,24 @@ import (
 
 const PROMPT = ">> "
 
+const initial = `
+# http "http.rs";
+# sys "imports.rs";
+let server1 = http.new_server("4000");
+server["register"]("GET", "/hello", fn(){return "Hello world"});
+server["start"]();
+
+`
+
+/*
+
+*/
+
 func Start(in io.Reader, out io.Writer) error {
 	scanner := bufio.NewScanner(in)
 	env := objects.NewEnvironment()
+
+	eval(initial, env, out)
 
 	for {
 		_, err := fmt.Fprint(out, PROMPT)
@@ -31,27 +46,36 @@ func Start(in io.Reader, out io.Writer) error {
 			return nil
 		}
 
-		l := lexer.New(line, "REPL")
-		p := parser.New(l)
-
-		program := p.ParseProgram()
-
-		if len(p.Errors()) != 0 {
-			for _, s := range p.Errors() {
-				_, err := fmt.Fprintf(out, "\t%s\n", s)
-				if err != nil {
-					return err
-				}
-			}
+		if len(line) == 0 {
 			continue
 		}
 
-		obj := evaluator.Eval(program, env)
-		if obj != objects.NULL {
-			_, err = fmt.Fprintf(out, "%s\n", obj.Inspect())
+		eval(line, env, out)
+	}
+}
+
+func eval(input string, environment *objects.Environment, out io.Writer) {
+	l := lexer.New(initial, "REPL")
+	p := parser.New(l)
+
+	program := p.ParseProgram()
+
+	if len(p.Errors()) != 0 {
+		for _, s := range p.Errors() {
+			_, err := fmt.Fprintf(out, "\t%s\n", s)
 			if err != nil {
-				return err
+				return
 			}
 		}
+		return
 	}
+
+	obj := evaluator.Eval(program, environment)
+	if obj != objects.NULL {
+		_, err := fmt.Fprintf(out, "%s\n", obj.Inspect())
+		if err != nil {
+			return
+		}
+	}
+
 }
