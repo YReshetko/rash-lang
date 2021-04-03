@@ -14,6 +14,7 @@ func InitRegistry(r *extensions.Registry) {
 }
 
 type Evaluator func(node ast.Node, environment *objects.Environment) objects.Object
+
 var Evaluate Evaluator
 
 var builtins = map[string]*objects.Builtin{
@@ -97,7 +98,7 @@ func NewCallback(fn *objects.Function) func(args ...interface{}) ([]interface{},
 
 		outValues := []interface{}{}
 
-		if evaluated != objects.NULL{
+		if evaluated != objects.NULL {
 			outValues = []interface{}{getValue(evaluated)}
 		}
 
@@ -143,6 +144,14 @@ func retVal(val interface{}) objects.Object {
 		return &objects.Integer{Value: int64(*v)}
 	case *uint:
 		return &objects.Integer{Value: int64(*v)}
+	case float64:
+		return &objects.Double{Value: v}
+	case float32:
+		return &objects.Double{Value: float64(v)}
+	case *float64:
+		return &objects.Double{Value: *v}
+	case *float32:
+		return &objects.Double{Value: float64(*v)}
 	case string:
 		return &objects.String{Value: v}
 	case *string:
@@ -151,6 +160,27 @@ func retVal(val interface{}) objects.Object {
 		return nativeBoolean(v)
 	case *bool:
 		return nativeBoolean(*v)
+	case map[interface{}]interface{}:
+		h := &objects.Hash{Pairs: map[objects.HashKey]objects.HashPair{}}
+		for key, value := range v {
+			k := retVal(key)
+			hashKey, ok := k.(objects.Hashable)
+			if !ok {
+				continue
+			}
+			v := retVal(value)
+			h.Pairs[hashKey.HashKey()] = objects.HashPair{
+				Key:   k,
+				Value: v,
+			}
+		}
+		return h
+	case []interface{}:
+		arr := &objects.Array{Elements: make([]objects.Object, len(v))}
+		for i, value := range v {
+			arr.Elements[i] = retVal(value)
+		}
+		return arr
 	default:
 		return objects.NULL
 	}
@@ -162,6 +192,8 @@ func getValue(object objects.Object) interface{} {
 		return obj.Value
 	case *objects.Integer:
 		return obj.Value
+	case *objects.Double:
+		return obj.Value
 	case *objects.Boolean:
 		return obj.Value
 	case *objects.Array:
@@ -172,7 +204,7 @@ func getValue(object objects.Object) interface{} {
 		return arr
 	case *objects.Hash:
 		m := map[interface{}]interface{}{}
-		for _, v := range obj.Pairs{
+		for _, v := range obj.Pairs {
 			m[getValue(v.Key)] = getValue(v.Value)
 		}
 		return m
