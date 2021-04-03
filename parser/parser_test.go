@@ -16,6 +16,7 @@ func TestLetStatement(t *testing.T) {
 	let x = 5;
 	let y = 10;
 	let value = 8345;
+	let double = 136.12;
 `
 	l := lexer.New(input, "non-file")
 
@@ -25,7 +26,7 @@ func TestLetStatement(t *testing.T) {
 	program := p.ParseProgram()
 	require.Len(t, p.Errors(), 0)
 	require.NotNil(t, program)
-	require.Len(t, program.Statements, 3)
+	require.Len(t, program.Statements, 4)
 
 	tests := []struct {
 		expectedIdentifier string
@@ -34,6 +35,7 @@ func TestLetStatement(t *testing.T) {
 		{"x", "5"},
 		{"y", "10"},
 		{"value", "8345"},
+		{"double", "136.12"},
 	}
 
 	for i, test := range tests {

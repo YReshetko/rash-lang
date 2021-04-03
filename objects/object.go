@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/YReshetko/rash-lang/ast"
 	"hash/fnv"
+	"math"
 	"strings"
 )
 
@@ -13,6 +14,7 @@ type BuiltinFunction func(args ...Object) Object
 
 const (
 	INTEGER_OBJ      ObjectType = "INTEGER"
+	DOUBLE_OBJ       ObjectType = "DOUBLE"
 	STRING_OBJ       ObjectType = "STRING"
 	BOOLEAN_OBJ      ObjectType = "BOOLEAN"
 	NULL_OBJ         ObjectType = "NULL"
@@ -46,6 +48,20 @@ type Object interface {
 	Inspect() string
 }
 
+type Arithmeticable interface {
+	Add(Object) Object
+	Sub(Object) Object
+	Mul(Object) Object
+	Div(Object) Object
+}
+
+type Comparable interface {
+	Gt(Object) bool
+	Lt(Object) bool
+	Eq(Object) bool
+	Neq(Object) bool
+}
+
 type Integer struct {
 	Value int64
 }
@@ -63,6 +79,189 @@ func (i *Integer) HashKey() HashKey {
 		Type:  i.Type(),
 		Value: uint64(i.Value),
 	}
+}
+
+func (i *Integer) Add(ob Object) Object {
+	switch v := ob.(type) {
+	case *Integer:
+		return &Integer{Value: i.Value + v.Value}
+	case *Double:
+		return &Double{Value: float64(i.Value) + v.Value}
+	}
+	return NULL
+}
+func (i *Integer) Sub(ob Object) Object {
+	switch v := ob.(type) {
+	case *Integer:
+		return &Integer{Value: i.Value - v.Value}
+	case *Double:
+		return &Double{Value: float64(i.Value) - v.Value}
+	}
+	return NULL
+}
+func (i *Integer) Mul(ob Object) Object {
+	switch v := ob.(type) {
+	case *Integer:
+		return &Integer{Value: i.Value * v.Value}
+	case *Double:
+		return &Double{Value: float64(i.Value) * v.Value}
+	}
+	return NULL
+}
+func (i *Integer) Div(ob Object) Object {
+	switch v := ob.(type) {
+	case *Integer:
+		intVal := i.Value / v.Value
+		floatVal := float64(i.Value) / float64(v.Value)
+		if math.Abs(float64(intVal)-floatVal) < 0.000001 {
+			return &Integer{Value: intVal}
+		}
+		return &Double{Value: floatVal}
+	case *Double:
+		return &Double{Value: float64(i.Value) / v.Value}
+	}
+	return NULL
+}
+
+func (i *Integer) Gt(ob Object) bool {
+	switch v := ob.(type) {
+	case *Integer:
+		return i.Value > v.Value
+	case *Double:
+		return float64(i.Value) > v.Value
+	}
+	return false
+}
+func (i *Integer) Lt(ob Object) bool {
+	switch v := ob.(type) {
+	case *Integer:
+		return i.Value < v.Value
+	case *Double:
+		return float64(i.Value) < v.Value
+	}
+	return false
+}
+func (i *Integer) Eq(ob Object) bool {
+	switch v := ob.(type) {
+	case *Integer:
+		return i.Value == v.Value
+	case *Double:
+		return float64(i.Value) == v.Value
+	}
+	return false
+}
+func (i *Integer) Neq(ob Object) bool {
+	switch v := ob.(type) {
+	case *Integer:
+		return i.Value != v.Value
+	case *Double:
+		return float64(i.Value) != v.Value
+	}
+	return false
+}
+
+type Double struct {
+	Value float64
+}
+
+func (d *Double) Inspect() string {
+	return fmt.Sprintf("%f", d.Value)
+}
+
+func (d *Double) Type() ObjectType {
+	return DOUBLE_OBJ
+}
+
+func (d *Double) HashKey() HashKey {
+	hash := fnv.New64()
+	_, _ = hash.Write([]byte(fmt.Sprintf("%f", d.Value)))
+	return HashKey{
+		Type:  d.Type(),
+		Value: hash.Sum64(),
+	}
+}
+
+func (d *Double) Add(ob Object) Object {
+	switch v := ob.(type) {
+	case *Integer:
+		return &Double{Value: d.Value + float64(v.Value)}
+	case *Double:
+		return &Double{Value: d.Value + v.Value}
+	}
+	return NULL
+}
+
+func (d *Double) Sub(ob Object) Object {
+	switch v := ob.(type) {
+	case *Integer:
+		return &Double{Value: d.Value - float64(v.Value)}
+	case *Double:
+		return &Double{Value: d.Value - v.Value}
+	}
+	return NULL
+}
+
+func (d *Double) Mul(ob Object) Object {
+	switch v := ob.(type) {
+	case *Integer:
+		floatVal := d.Value * float64(v.Value)
+		intVal := math.Round(floatVal)
+		if math.Abs(intVal-floatVal) < 0.000001 {
+			return &Integer{Value: int64(intVal)}
+		}
+		return &Double{Value: floatVal}
+	case *Double:
+		return &Double{Value: d.Value * v.Value}
+	}
+	return NULL
+}
+
+func (d *Double) Div(ob Object) Object {
+	switch v := ob.(type) {
+	case *Integer:
+		return &Double{Value: d.Value / float64(v.Value)}
+	case *Double:
+		return &Double{Value: d.Value / v.Value}
+	}
+	return NULL
+}
+
+
+func (d *Double) Gt(ob Object) bool {
+	switch v := ob.(type) {
+	case *Integer:
+		return d.Value > float64(v.Value)
+	case *Double:
+		return d.Value > v.Value
+	}
+	return false
+}
+func (d *Double) Lt(ob Object) bool {
+	switch v := ob.(type) {
+	case *Integer:
+		return d.Value < float64(v.Value)
+	case *Double:
+		return d.Value < v.Value
+	}
+	return false
+}
+func (d *Double) Eq(ob Object) bool {
+	switch v := ob.(type) {
+	case *Integer:
+		return d.Value == float64(v.Value)
+	case *Double:
+		return d.Value == v.Value
+	}
+	return false
+}
+func (d *Double) Neq(ob Object) bool {
+	switch v := ob.(type) {
+	case *Integer:
+		return d.Value != float64(v.Value)
+	case *Double:
+		return d.Value != v.Value
+	}
+	return false
 }
 
 type String struct {

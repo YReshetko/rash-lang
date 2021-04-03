@@ -35,6 +35,7 @@ func New(l *lexer.Lexer) *Parser {
 
 	p.registerPrefix(tokens.IDENT, p.parseIdentifier)
 	p.registerPrefix(tokens.INT, p.parseIntegerLiteral)
+	p.registerPrefix(tokens.DOUBLE, p.parseDoubleLiteral)
 	p.registerPrefix(tokens.TRUE, p.parseBooleanLiteral)
 	p.registerPrefix(tokens.FALSE, p.parseBooleanLiteral)
 	p.registerPrefix(tokens.BANG, p.parsePrefixExpression)
@@ -268,6 +269,21 @@ func (p *Parser) parseIntegerLiteral() ast.Expression {
 	return lit
 }
 
+func (p *Parser) parseDoubleLiteral() ast.Expression {
+	defer untrace(trace("parseDoubleLiteral"))
+	lit := &ast.DoubleLiteral{Token: p.currToken}
+
+	value, err := strconv.ParseFloat(lit.TokenLiteral(), 64)
+	if err != nil {
+		message := fmt.Sprintf("expected double literal on line %d instead of %s", p.currToken.LineNumber, p.currToken.Literal)
+		p.errors = append(p.errors, message)
+		return nil
+	}
+
+	lit.Value = value
+	return lit
+}
+
 func (p *Parser) parseStringLiteral() ast.Expression {
 	defer untrace(trace("parseStringLiteral"))
 	return &ast.StringLiteral{Token: p.currToken, Value: p.currToken.Literal}
@@ -426,7 +442,6 @@ func (p *Parser) parseForArgument() ast.Expression {
 	}
 	return arg
 }
-
 
 func (p *Parser) parseBlockStatement() *ast.BlockStatement {
 	defer untrace(trace("parseBlockStatement"))

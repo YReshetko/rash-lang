@@ -8,6 +8,7 @@ import (
 	"github.com/YReshetko/rash-lang/parser"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"math"
 	"testing"
 )
 
@@ -34,6 +35,23 @@ func TestIntegerEval(t *testing.T) {
 	for _, test := range tests {
 		obj := testEval(t, test.input)
 		assertIntegerObject(t, obj, test.value)
+	}
+}
+
+func TestDoubleEval(t *testing.T) {
+	tests := []struct {
+		input string
+		value float64
+	}{
+		{"5.128", 5.128},
+		{"3.128 + 0.128", 3.256},
+		{"3.128 - 0.128", 3},
+		{"2 - -3 + 13 / 6", 7.1666666},
+		{"2 - (-3 + 13) / 3", -1.3333333},
+	}
+	for _, test := range tests {
+		obj := testEval(t, test.input)
+		assertDoubleObject(t, obj, test.value)
 	}
 }
 
@@ -527,7 +545,6 @@ func TestForExpression(t *testing.T) {
 	assertIntegerObject(t, obj, 45)
 }
 
-
 func TestForExpressionCondition(t *testing.T) {
 	input := `
 		let sum = 0;
@@ -567,7 +584,6 @@ func TestForExpressionEmpty(t *testing.T) {
 	assertIntegerObject(t, obj, 5)
 }
 
-
 func TestForAssignment(t *testing.T) {
 	input := `
 		let sum = 0;
@@ -583,7 +599,6 @@ func TestForAssignment(t *testing.T) {
 	obj := testEval(t, input)
 	assertIntegerObject(t, obj, 5)
 }
-
 
 func assertArrayObject(t *testing.T, obj objects.Object, value []interface{}) {
 	arr, ok := obj.(*objects.Array)
@@ -622,6 +637,14 @@ func assertIntegerObject(t *testing.T, obj objects.Object, expectedValue int64) 
 	intObj, ok := obj.(*objects.Integer)
 	require.True(t, ok)
 	assert.Equal(t, expectedValue, intObj.Value)
+}
+
+func assertDoubleObject(t *testing.T, obj objects.Object, expectedValue float64) {
+	require.NotNil(t, obj)
+	assert.Equal(t, objects.DOUBLE_OBJ, obj.Type())
+	intObj, ok := obj.(*objects.Double)
+	require.True(t, ok)
+	assert.True(t, math.Abs(expectedValue-intObj.Value) < 0.000001)
 }
 
 func assertBooleanObject(t *testing.T, obj objects.Object, expectedValue bool) {

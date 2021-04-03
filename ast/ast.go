@@ -157,6 +157,19 @@ func (i *IntegerLiteral) StackLine() string {
 	return fmt.Sprintf("file: %s; line: %d", i.Token.FileName, i.Token.LineNumber)
 }
 
+
+type DoubleLiteral struct {
+	Token tokens.Token
+	Value float64
+}
+
+func (d *DoubleLiteral) expressionNode()      {}
+func (d *DoubleLiteral) TokenLiteral() string { return d.Token.Literal }
+func (d *DoubleLiteral) String() string       { return d.Token.Literal }
+func (d *DoubleLiteral) StackLine() string {
+	return fmt.Sprintf("file: %s; line: %d", d.Token.FileName, d.Token.LineNumber)
+}
+
 type StringLiteral struct {
 	Token tokens.Token
 	Value string

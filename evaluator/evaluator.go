@@ -37,6 +37,8 @@ func Eval(node ast.Node, environment *objects.Environment) objects.Object {
 		return evalForExpression(node, environment)
 	case *ast.IntegerLiteral:
 		return &objects.Integer{Value: node.Value}
+	case *ast.DoubleLiteral:
+		return &objects.Double{Value: node.Value}
 	case *ast.StringLiteral:
 		return &objects.String{Value: node.Value}
 	case *ast.BooleanLiteral:
@@ -93,7 +95,6 @@ func Eval(node ast.Node, environment *objects.Environment) objects.Object {
 
 	return objects.NULL
 }
-
 
 func evalHashLiteral(node *ast.HashLiteral, environment *objects.Environment) objects.Object {
 	hash := &objects.Hash{
@@ -269,7 +270,7 @@ func evalForExpression(node *ast.ForExpression, environment *objects.Environment
 		}
 
 		value = Eval(node.Body, newEnv)
-		if isError(value){
+		if isError(value) {
 			return value
 		}
 
@@ -279,7 +280,7 @@ func evalForExpression(node *ast.ForExpression, environment *objects.Environment
 
 		if node.Complete != nil {
 			compl := Eval(node.Complete, newEnv)
-			if isError(value){
+			if isError(value) {
 				return compl
 			}
 		}
@@ -377,7 +378,7 @@ func evalAssignArrayIndexExpression(left objects.Object, index, value objects.Ob
 	ind := index.(*objects.Integer).Value
 	max := int64(len(arr.Elements) - 1)
 	if 0 > ind || ind > max {
-		return newError("index outbound: len=%d, ind=%d", max + 1, ind)
+		return newError("index outbound: len=%d, ind=%d", max+1, ind)
 	}
 	arr.Elements[ind] = value
 	return value
@@ -419,8 +420,8 @@ func evalDottedExpression(left objects.Object, right ast.Expression, environment
 
 func evalNativeInfixExpression(operator string, left objects.Object, right objects.Object) objects.Object {
 	switch {
-	case left.Type() == objects.INTEGER_OBJ && right.Type() == objects.INTEGER_OBJ:
-		return evalIntegerInfixExpression(operator, left, right)
+	case isNumbers(left.Type(), right.Type()):
+		return evalNumberInfixExpression(operator, left, right)
 	case left.Type() == objects.STRING_OBJ && right.Type() == objects.STRING_OBJ:
 		return evalStringInfixExpression(operator, left, right)
 	case operator == "==":
@@ -434,26 +435,34 @@ func evalNativeInfixExpression(operator string, left objects.Object, right objec
 	}
 }
 
-func evalIntegerInfixExpression(operator string, left, right objects.Object) objects.Object {
-	leftVal := left.(*objects.Integer).Value
-	rightVal := right.(*objects.Integer).Value
+func isNumbers(left, right objects.ObjectType) bool {
+	return (left == objects.INTEGER_OBJ || left == objects.DOUBLE_OBJ) &&
+		(right == objects.INTEGER_OBJ || right == objects.DOUBLE_OBJ)
+}
+
+func evalNumberInfixExpression(operator string, left, right objects.Object) objects.Object {
+	leftVal := left.(objects.Arithmeticable)
 	switch operator {
 	case "+":
-		return &objects.Integer{Value: leftVal + rightVal}
+		return leftVal.Add(right)
 	case "-":
-		return &objects.Integer{Value: leftVal - rightVal}
+		return leftVal.Sub(right)
 	case "/":
-		return &objects.Integer{Value: leftVal / rightVal}
+		return leftVal.Div(right)
 	case "*":
-		return &objects.Integer{Value: leftVal * rightVal}
+		return leftVal.Mul(right)
+	}
+
+	compLeft := left.(objects.Comparable)
+	switch operator {
 	case ">":
-		return nativeBoolean(leftVal > rightVal)
+		return nativeBoolean(compLeft.Gt(right))
 	case "<":
-		return nativeBoolean(leftVal < rightVal)
+		return nativeBoolean(compLeft.Lt(right))
 	case "==":
-		return nativeBoolean(leftVal == rightVal)
+		return nativeBoolean(compLeft.Eq(right))
 	case "!=":
-		return nativeBoolean(leftVal != rightVal)
+		return nativeBoolean(compLeft.Neq(right))
 	default:
 		return newError("unknown operator: %s %s %s", left.Type(), operator, right.Type())
 	}
@@ -487,12 +496,14 @@ func evalPrefixExpression(operator string, right objects.Object) objects.Object 
 }
 
 func evalMinusPrefixExpression(value objects.Object) objects.Object {
-	if value.Type() != objects.INTEGER_OBJ {
+	if value.Type() != objects.INTEGER_OBJ && value.Type() != objects.DOUBLE_OBJ {
 		return newError("unknown operator: -%s", value.Type())
 	}
 	switch v := value.(type) {
 	case *objects.Integer:
 		return &objects.Integer{Value: -v.Value}
+	case *objects.Double:
+		return &objects.Double{Value: -v.Value}
 	default:
 		return objects.NULL
 	}

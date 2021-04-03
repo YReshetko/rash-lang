@@ -1,6 +1,9 @@
 package lexer
 
-import "github.com/YReshetko/rash-lang/tokens"
+import (
+	"github.com/YReshetko/rash-lang/tokens"
+	"strings"
+)
 
 type Lexer struct {
 	input        string
@@ -84,6 +87,9 @@ func (l *Lexer) NextToken() tokens.Token {
 	default:
 		if l.isDigit(l.ch) {
 			lit := l.readNumber()
+			if strings.Contains(lit, "."){
+				return l.newToken(tokens.DOUBLE, lit)
+			}
 			return l.newToken(tokens.INT, lit)
 		} else if l.isLetter(l.ch) {
 			lit := l.readIdentifier()
@@ -98,7 +104,7 @@ func (l *Lexer) NextToken() tokens.Token {
 
 func (l *Lexer) readIdentifier() string {
 	position := l.position
-	for l.isLetter(l.ch) {
+	for l.isLetter(l.ch) || l.isDigit(l.ch) {
 		l.readChar()
 	}
 	return l.input[position:l.position]
@@ -149,7 +155,7 @@ func (l *Lexer) isDigit(ch byte) bool {
 
 func (l *Lexer) readNumber() string {
 	position := l.position
-	for l.isDigit(l.ch) {
+	for l.isDigit(l.ch) || l.ch == '.' {
 		l.readChar()
 	}
 	return l.input[position:l.position]

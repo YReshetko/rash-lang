@@ -7,6 +7,7 @@ const (
 	// Identifiers + literals
 	IDENT  = "IDENT" // variable names: foo, bar, i, x, y
 	INT    = "INT"
+	DOUBLE = "DOUBLE"
 	STRING = "STRING"
 
 	// Operators

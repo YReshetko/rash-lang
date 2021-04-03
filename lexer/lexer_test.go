@@ -56,6 +56,8 @@ func TestNextToken_Program(t *testing.T) {
 	[1, 2];
 	{"foo":"bar", true: 195};
 	for (a < b) {};
+
+	let tenFifteen = 10.15;
 `
 	tests := []struct {
 		expectedType    tokens.TokenType
@@ -135,6 +137,12 @@ func TestNextToken_Program(t *testing.T) {
 		{tokens.RPAREN, ")"},
 		{tokens.LBRACE, "{"},
 		{tokens.RBRACE, "}"},
+		{tokens.SEMICOLON, ";"},
+		//let tenFifteen = 10.15;
+		{tokens.LET, "let"},
+		{tokens.IDENT, "tenFifteen"},
+		{tokens.ASSIGN, "="},
+		{tokens.DOUBLE, "10.15"},
 		{tokens.SEMICOLON, ";"},
 		{tokens.EOF, ""},
 	}
