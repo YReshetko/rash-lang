@@ -240,10 +240,11 @@ func evalIfExpression(node *ast.IfExpression, environment *objects.Environment) 
 	if isError(condition) {
 		return condition
 	}
+	newEnv := objects.NewEnclosedEnvironment(environment)
 	if isTruthy(condition) {
-		return Eval(node.Consequence, environment)
+		return Eval(node.Consequence, newEnv)
 	} else if node.Alternative != nil {
-		return Eval(node.Alternative, environment)
+		return Eval(node.Alternative, newEnv)
 	}
 	return objects.NULL
 }
