@@ -56,6 +56,7 @@ type LetStatement struct {
 }
 
 func (l *LetStatement) statementNode()       {}
+func (l *LetStatement) expressionNode()      {}
 func (l *LetStatement) TokenLiteral() string { return l.Token.Literal }
 func (l *LetStatement) String() string {
 	out := bytes.Buffer{}
@@ -204,7 +205,7 @@ func (a *ArrayLiteral) StackLine() string {
 }
 
 type HashLiteral struct {
-	Token    tokens.Token
+	Token tokens.Token
 	Pairs map[Expression]Expression
 }
 
@@ -215,7 +216,7 @@ func (h *HashLiteral) String() string {
 	pairs := make([]string, len(h.Pairs))
 	i := 0
 	for k, v := range h.Pairs {
-		pairs[i] = k.String() + ":"+v.String()
+		pairs[i] = k.String() + ":" + v.String()
 		i++
 	}
 
@@ -309,6 +310,42 @@ func (i *IfExpression) String() string {
 }
 func (i *IfExpression) StackLine() string {
 	return fmt.Sprintf("file: %s; line: %d", i.Token.FileName, i.Token.LineNumber)
+}
+
+type ForExpression struct {
+	Token     tokens.Token
+	Initial   Expression // optional
+	Condition Expression // optional
+	Complete  Expression // optional
+	Body      *BlockStatement
+}
+
+func (f *ForExpression) expressionNode()      {}
+func (f *ForExpression) TokenLiteral() string { return f.Token.Literal }
+func (f *ForExpression) String() string {
+	out := bytes.Buffer{}
+
+	out.WriteString("for (")
+	if f.Initial != nil {
+		out.WriteString(f.Initial.String())
+		out.WriteString(";")
+	}
+	if f.Condition != nil {
+		out.WriteString(f.Condition.String())
+		out.WriteString(";")
+	}
+	if f.Complete != nil {
+		out.WriteString(f.Complete.String())
+		out.WriteString(";")
+	}
+	out.WriteString(") {")
+	out.WriteString(f.Body.String())
+	out.WriteString("}")
+
+	return out.String()
+}
+func (f *ForExpression) StackLine() string {
+	return fmt.Sprintf("file: %s; line: %d", f.Token.FileName, f.Token.LineNumber)
 }
 
 type BlockStatement struct {

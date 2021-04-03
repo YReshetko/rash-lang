@@ -514,6 +514,77 @@ func TestAssignExpression(t *testing.T) {
 	}
 }
 
+func TestForExpression(t *testing.T) {
+	input := `
+		let sum = 0;
+		for (let i = 0; i < 10; i = i + 1)
+		{
+			sum = sum + i
+		}
+		sum;
+`
+	obj := testEval(t, input)
+	assertIntegerObject(t, obj, 45)
+}
+
+
+func TestForExpressionCondition(t *testing.T) {
+	input := `
+		let sum = 0;
+		for ( sum < 10; sum = sum + 1){}
+		sum;
+`
+	obj := testEval(t, input)
+	assertIntegerObject(t, obj, 10)
+}
+
+func TestForExpressionConditionOnly(t *testing.T) {
+	input := `
+		let sum = 0;
+		for ( sum < 15;){
+			sum = sum + 1;
+		}
+		sum;
+`
+	obj := testEval(t, input)
+	assertIntegerObject(t, obj, 15)
+}
+
+func TestForExpressionEmpty(t *testing.T) {
+	input := `
+		let sum = 0;
+		fn() {
+			for (){
+				sum = sum + 1;
+				if (sum == 5) {
+					return;
+				}
+			}
+		}()
+		sum;
+`
+	obj := testEval(t, input)
+	assertIntegerObject(t, obj, 5)
+}
+
+
+func TestForAssignment(t *testing.T) {
+	input := `
+		let sum = 0;
+		let a = 1;
+		a = for (){
+			sum = sum + 1;
+			if (sum == 5) {
+				return;
+			}
+		}
+		sum;
+`
+	obj := testEval(t, input)
+	assertIntegerObject(t, obj, 5)
+}
+
+
 func assertArrayObject(t *testing.T, obj objects.Object, value []interface{}) {
 	arr, ok := obj.(*objects.Array)
 	require.True(t, ok)

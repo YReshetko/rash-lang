@@ -41,6 +41,8 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefix(tokens.MINUS, p.parsePrefixExpression)
 	p.registerPrefix(tokens.LPAREN, p.parseGroupedExpression)
 	p.registerPrefix(tokens.IF, p.parseIfExpression)
+	p.registerPrefix(tokens.FOR, p.parseForExpression)
+	p.registerPrefix(tokens.LET, p.parseLetExpression)
 	p.registerPrefix(tokens.FUNCTION, p.parseFunctionLiteral)
 	p.registerPrefix(tokens.STRING, p.parseStringLiteral)
 	p.registerPrefix(tokens.LBRACKET, p.parseArrayLiteral)
@@ -123,10 +125,18 @@ func (p *Parser) parseLetStatement() ast.Statement {
 	return statement
 }
 
+func (p *Parser) parseLetExpression() ast.Expression {
+	return p.parseLetStatement().(*ast.LetStatement)
+}
+
 func (p *Parser) parseReturnStatement() ast.Statement {
 	defer untrace(trace("parseReturnStatement"))
 	statement := &ast.ReturnStatement{Token: p.currToken}
 	p.nextToken()
+
+	if p.currTokenIs(tokens.SEMICOLON) {
+		return statement
+	}
 
 	statement.Value = p.parseExpression(LOWEST)
 
@@ -344,6 +354,79 @@ func (p *Parser) parseIfExpression() ast.Expression {
 
 	return exp
 }
+
+func (p *Parser) parseForExpression() ast.Expression {
+	defer untrace(trace("parseForExpression"))
+	exp := &ast.ForExpression{
+		Token: p.currToken,
+	}
+
+	if !p.expectPeekToken(tokens.LPAREN) {
+		return nil
+	}
+	// Parse for params expressions
+	args := p.parseForArguments()
+
+	if !p.expectPeekToken(tokens.RPAREN) {
+		return nil
+	}
+
+	if !p.expectPeekToken(tokens.LBRACE) {
+		return nil
+	}
+
+	switch len(args) {
+	case 1:
+		exp.Condition = args[0]
+	case 2:
+		exp.Condition = args[0]
+		exp.Complete = args[1]
+	case 3:
+		exp.Initial = args[0]
+		exp.Condition = args[1]
+		exp.Complete = args[2]
+	}
+
+	exp.Body = p.parseBlockStatement()
+
+	return exp
+}
+
+func (p *Parser) parseForArguments() []ast.Expression {
+	var args []ast.Expression
+	if p.peekTokenIs(tokens.RPAREN) {
+		return args
+	}
+	p.nextToken()
+
+	args = append(args, p.parseForArgument())
+	if p.peekTokenIs(tokens.RPAREN) {
+		return args
+	}
+	p.nextToken()
+
+	args = append(args, p.parseForArgument())
+	if p.peekTokenIs(tokens.RPAREN) {
+		return args
+	}
+	p.nextToken()
+
+	args = append(args, p.parseForArgument())
+	if p.peekTokenIs(tokens.SEMICOLON) {
+		p.nextToken()
+	}
+
+	return args
+}
+
+func (p *Parser) parseForArgument() ast.Expression {
+	arg := p.parseExpression(LOWEST)
+	if p.peekTokenIs(tokens.SEMICOLON) {
+		p.nextToken()
+	}
+	return arg
+}
+
 
 func (p *Parser) parseBlockStatement() *ast.BlockStatement {
 	defer untrace(trace("parseBlockStatement"))

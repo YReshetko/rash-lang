@@ -881,3 +881,122 @@ func TestAssignExpressionsArray(t *testing.T) {
 	require.True(t, ok)
 	assert.Equal(t, "((arr[10]) = (a + 2))", infix.String())
 }
+
+func TestForStatement(t *testing.T) {
+	input := `for (let i = 0; i < 10; i = i + 1) { sum = sum + i; }`
+	l := lexer.New(input, "non-file")
+	p := parser.New(l)
+
+	program := p.ParseProgram()
+	require.Len(t, p.Errors(), 0)
+	require.NotNil(t, program)
+	require.Len(t, program.Statements, 1)
+
+	statement, ok := program.Statements[0].(*ast.ExpressionStatement)
+	require.True(t, ok)
+
+	forExp, ok := statement.Expression.(*ast.ForExpression)
+	require.True(t, ok)
+
+	let, ok := forExp.Initial.(*ast.LetStatement)
+	require.True(t, ok)
+	assert.Equal(t, "let i = 0;", let.String())
+
+	infix, ok := forExp.Condition.(*ast.InfixExpression)
+	require.True(t, ok)
+	assert.Equal(t, "(i < 10)", infix.String())
+
+	complete, ok := forExp.Complete.(*ast.InfixExpression)
+	require.True(t, ok)
+	assert.Equal(t, "(i = (i + 1))", complete.String())
+
+	require.Len(t, forExp.Body.Statements, 1)
+	_, ok = forExp.Body.Statements[0].(*ast.ExpressionStatement)
+	assert.True(t, ok)
+}
+
+func TestForStatementNoInitial(t *testing.T) {
+	input := `for (i < 10; i = i + 1) { sum = sum + i; }`
+	l := lexer.New(input, "non-file")
+	p := parser.New(l)
+
+	program := p.ParseProgram()
+	require.Len(t, p.Errors(), 0)
+	require.NotNil(t, program)
+	require.Len(t, program.Statements, 1)
+
+	statement, ok := program.Statements[0].(*ast.ExpressionStatement)
+	require.True(t, ok)
+
+	forExp, ok := statement.Expression.(*ast.ForExpression)
+	require.True(t, ok)
+
+	assert.Nil(t, forExp.Initial)
+
+	infix, ok := forExp.Condition.(*ast.InfixExpression)
+	require.True(t, ok)
+	assert.Equal(t, "(i < 10)", infix.String())
+
+	complete, ok := forExp.Complete.(*ast.InfixExpression)
+	require.True(t, ok)
+	assert.Equal(t, "(i = (i + 1))", complete.String())
+
+	require.Len(t, forExp.Body.Statements, 1)
+	_, ok = forExp.Body.Statements[0].(*ast.ExpressionStatement)
+	assert.True(t, ok)
+}
+
+
+func TestForStatementNoComplete(t *testing.T) {
+	input := `for (i < 10;) { sum = sum + i; }`
+	l := lexer.New(input, "non-file")
+	p := parser.New(l)
+
+	program := p.ParseProgram()
+	require.Len(t, p.Errors(), 0)
+	require.NotNil(t, program)
+	require.Len(t, program.Statements, 1)
+
+	statement, ok := program.Statements[0].(*ast.ExpressionStatement)
+	require.True(t, ok)
+
+	forExp, ok := statement.Expression.(*ast.ForExpression)
+	require.True(t, ok)
+
+	assert.Nil(t, forExp.Initial)
+	assert.Nil(t, forExp.Complete)
+
+	infix, ok := forExp.Condition.(*ast.InfixExpression)
+	require.True(t, ok)
+	assert.Equal(t, "(i < 10)", infix.String())
+
+	require.Len(t, forExp.Body.Statements, 1)
+	_, ok = forExp.Body.Statements[0].(*ast.ExpressionStatement)
+	assert.True(t, ok)
+}
+
+
+func TestForStatementNoParams(t *testing.T) {
+	input := `for () { sum = sum + i; }`
+	l := lexer.New(input, "non-file")
+	p := parser.New(l)
+
+	program := p.ParseProgram()
+	require.Len(t, p.Errors(), 0)
+	require.NotNil(t, program)
+	require.Len(t, program.Statements, 1)
+
+	statement, ok := program.Statements[0].(*ast.ExpressionStatement)
+	require.True(t, ok)
+
+	forExp, ok := statement.Expression.(*ast.ForExpression)
+	require.True(t, ok)
+
+	assert.Nil(t, forExp.Initial)
+	assert.Nil(t, forExp.Complete)
+	assert.Nil(t, forExp.Condition)
+
+	require.Len(t, forExp.Body.Statements, 1)
+	_, ok = forExp.Body.Statements[0].(*ast.ExpressionStatement)
+	assert.True(t, ok)
+}

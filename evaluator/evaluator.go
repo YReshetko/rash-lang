@@ -33,6 +33,8 @@ func Eval(node ast.Node, environment *objects.Environment) objects.Object {
 		return evalInfixExpression(node, environment)
 	case *ast.IfExpression:
 		return evalIfExpression(node, environment)
+	case *ast.ForExpression:
+		return evalForExpression(node, environment)
 	case *ast.IntegerLiteral:
 		return &objects.Integer{Value: node.Value}
 	case *ast.StringLiteral:
@@ -91,6 +93,7 @@ func Eval(node ast.Node, environment *objects.Environment) objects.Object {
 
 	return objects.NULL
 }
+
 
 func evalHashLiteral(node *ast.HashLiteral, environment *objects.Environment) objects.Object {
 	hash := &objects.Hash{
@@ -243,6 +246,43 @@ func evalIfExpression(node *ast.IfExpression, environment *objects.Environment) 
 		return Eval(node.Alternative, environment)
 	}
 	return objects.NULL
+}
+
+func evalForExpression(node *ast.ForExpression, environment *objects.Environment) objects.Object {
+	newEnv := objects.NewEnclosedEnvironment(environment)
+
+	if node.Initial != nil {
+		Eval(node.Initial, newEnv)
+	}
+
+	var value objects.Object = objects.NULL
+	for {
+		if node.Condition != nil {
+			cond := Eval(node.Condition, newEnv)
+			if isError(cond) {
+				return cond
+			}
+			if !isTruthy(cond) {
+				return value
+			}
+		}
+
+		value = Eval(node.Body, newEnv)
+		if isError(value){
+			return value
+		}
+
+		if _, ok := value.(*objects.ReturnValue); ok {
+			return value
+		}
+
+		if node.Complete != nil {
+			compl := Eval(node.Complete, newEnv)
+			if isError(value){
+				return compl
+			}
+		}
+	}
 }
 
 func isTruthy(obj objects.Object) bool {

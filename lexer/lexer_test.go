@@ -55,6 +55,7 @@ func TestNextToken_Program(t *testing.T) {
 	"hello \n\t \"world\"";
 	[1, 2];
 	{"foo":"bar", true: 195};
+	for (a < b) {};
 `
 	tests := []struct {
 		expectedType    tokens.TokenType
@@ -123,6 +124,16 @@ func TestNextToken_Program(t *testing.T) {
 		{tokens.TRUE, "true"},
 		{tokens.COLON, ":"},
 		{tokens.INT, "195"},
+		{tokens.RBRACE, "}"},
+		{tokens.SEMICOLON, ";"},
+		//for (a < b) {};
+		{tokens.FOR, "for"},
+		{tokens.LPAREN, "("},
+		{tokens.IDENT, "a"},
+		{tokens.LT, "<"},
+		{tokens.IDENT, "b"},
+		{tokens.RPAREN, ")"},
+		{tokens.LBRACE, "{"},
 		{tokens.RBRACE, "}"},
 		{tokens.SEMICOLON, ";"},
 		{tokens.EOF, ""},

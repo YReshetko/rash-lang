@@ -41,7 +41,7 @@ func (e *Environment) Set(key string, value Object) Object {
 func (e *Environment) Update(key string, value Object) (Object, bool) {
 	val, ok := e.store[key]
 	if !ok {
-		return value, false
+		return e.outer.Update(key, value)
 	}
 	e.store[key] = value
 	return val, true
